@@ -160,9 +160,8 @@ const fmtS=n=>(!n||n===0)?"₱0":(n<0?"-":"+")+fmt(n);
 const pct=(a,b)=>b>0?Math.round((a/b)*100):0;
 const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 
-function mkDefault(){return{company:{name:"KDental",subtitle:"Dental Clinic",logoDataUrl:null},palette:JSON.parse(JSON.stringify(DEF_PAL)),incomeCats:DEF_INC.map(c=>({...c})),expenseCats:DEF_EXP.map(c=>({...c})),recurring:[],goals:{monthlyIncome:0,monthlyExpenseLimit:0,savingsTarget:0,emergencyFundPct:8},years:{}}}
-function ensureYr(d,yr){if(!d.years[yr]){d.years[yr]={income:{},expenses:{},entries:{}};MS.forEach(m=>{d.years[yr].income[m]={};d.years[yr].expenses[m]={};d.years[yr].entries[m]=[]})}}
-
+function mkDefault(){return{company:{name:"KDental",subtitle:"Dental Clinic",logoDataUrl:null,chairs:3,workingDaysPerMonth:22,fixedCosts:0},palette:JSON.parse(JSON.stringify(DEF_PAL)),incomeCats:DEF_INC.map(c=>({...c})),expenseCats:DEF_EXP.map(c=>({...c})),recurring:[],goals:{monthlyIncome:0,monthlyExpenseLimit:0,savingsTarget:0,emergencyFundPct:8},budgetPct:{},years:{}}}
+function ensureYr(d,yr){if(!d.years[yr]){d.years[yr]={income:{},expenses:{},entries:{},budget:{incomePlan:{},expensePlan:{}}};MS.forEach(m=>{d.years[yr].income[m]={};d.years[yr].expenses[m]={};d.years[yr].entries[m]=[];d.years[yr].budget.incomePlan[m]={};d.years[yr].budget.expensePlan[m]={}})}if(!d.years[yr].budget){d.years[yr].budget={incomePlan:{},expensePlan:{}};MS.forEach(m=>{d.years[yr].budget.incomePlan[m]={};d.years[yr].budget.expensePlan[m]={}})}if(!d.budgetPct)d.budgetPct={}}
 // ═══ CLOUD SYNC ═══
 let SCRIPT_URL = localStorage.getItem("kdental_script_url") || "";
 let syncStatus = SCRIPT_URL ? "ready" : "none"; // none, syncing, ok, error
@@ -188,24 +187,45 @@ async function cloudLoad() {
   }
 }
 
-async function cloudSave(data, lastAction) {
+let _syncTimer = null;
+let _pendingSync = false;
+
+async function _doCloudSave(data, lastAction) {
   if (!SCRIPT_URL) return;
   syncStatus = "syncing"; renderSyncBadge();
   try {
     const payload = JSON.parse(JSON.stringify(data));
     if (lastAction) payload._lastAction = lastAction;
-    await fetch(SCRIPT_URL, {
+    const r = await fetch(SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload),
       redirect: "follow"
     });
+    if (!r.ok) throw new Error("HTTP " + r.status);
     syncStatus = "ok"; lastSync = new Date();
+    _pendingSync = false;
   } catch (e) {
     console.error("Cloud save error:", e);
     syncStatus = "error";
+    _pendingSync = true;
   }
   renderSyncBadge();
+}
+
+function cloudSave(data, lastAction) {
+  if (!SCRIPT_URL) return;
+  _pendingSync = true;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => _doCloudSave(data, lastAction), 2000);
+}
+
+async function doPushToCloud() {
+  if (!SCRIPT_URL) { alert("Not connected to Google Sheets. Go to Settings → Reconfigure."); return; }
+  clearTimeout(_syncTimer);
+  await _doCloudSave(D);
+  if (syncStatus === "ok") alert("Data pushed to Google Sheets successfully!");
+  else alert("Push failed. Check your internet connection and try again.");
 }
 
 function renderSyncBadge() {
@@ -342,15 +362,35 @@ function render(){
     h+=`<div class="cds" style="grid-template-columns:1fr 1fr"><div class="cd"><div class="cl">Income Trend</div>${spark(MS.map(m=>stats[m].income),pal.accent)}</div><div class="cd"><div class="cl">Expense Trend</div>${spark(MS.map(m=>stats[m].expenses),pal.danger)}</div></div>`;
   }
 
-  // ═══ BUDGET ═══
+  // ═══ BUDGET (Plan vs Actual) ═══
   if(view==="budget"){
-    h+=`<div class="sec"><div class="st" style="color:var(--ac)">💰 Income — ${MF[MS.indexOf(month)]} ${year}<span class="sp"></span><button class="re" onclick="modalAddCat('income')">+ Source</button></div>`;
-    iCats.forEach(c=>{const v=yd.income?.[month]?.[c.id]||0;h+=`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}</span><span class="ra" style="color:${v>0?"var(--ac)":"var(--mu)"}">${fmt(v)}</span><button class="re" onclick="modalEditVal('income','${c.id}','${esc(c.name)}',${v})">₱</button><button class="re" onclick="modalEditCat('income','${c.id}','${esc(c.icon)}','${esc(c.name)}')">✏️</button></div>`});
-    h+=`<div class="rw" style="font-weight:700;border-top:2px solid var(--bd);padding-top:10px"><span class="ri">Σ</span><span class="rn">Gross Income</span><span class="ra" style="color:var(--ac)">${fmt(cs.income)}</span></div></div>`;
-    const maxE=Math.max(...eCats.map(c=>yd.expenses?.[month]?.[c.id]||0),1);
-    h+=`<div class="sec"><div class="st" style="color:var(--dn)">📉 Expenses — ${MF[MS.indexOf(month)]} ${year}<span class="sp"></span><button class="re" onclick="modalAddCat('expense')">+ Category</button></div>`;
-    eCats.forEach(c=>{const v=yd.expenses?.[month]?.[c.id]||0;h+=`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}</span><div class="rb2">${minibar(v,maxE,"var(--dn)")}</div><span class="ra">${fmt(v)}</span><button class="re" onclick="modalEditVal('expenses','${c.id}','${esc(c.name)}',${v})">₱</button><button class="re" onclick="modalEditCat('expense','${c.id}','${esc(c.icon)}','${esc(c.name)}')">✏️</button></div>`});
-    h+=`<div class="rw" style="font-weight:700;border-top:2px solid var(--bd);padding-top:10px"><span class="ri">Σ</span><span class="rn">Total Expenses</span><span class="ra" style="color:var(--dn)">${fmt(cs.expenses)}</span></div></div>`;
+    const bp=yd.budget||{incomePlan:{},expensePlan:{}};const bpI=bp.incomePlan?.[month]||{};const bpE=bp.expensePlan?.[month]||{};const bPct=D.budgetPct||{};
+    // Income plan
+    h+=`<div class="sec"><div class="st" style="color:var(--ac)">💰 Income Plan vs Actual — ${MF[MS.indexOf(month)]} ${year}<span class="sp"></span><button class="re" onclick="modalAddCat('income')">+ Source</button></div>`;
+    h+=`<div class="rw" style="font-size:10px;color:var(--mu);font-weight:600;border-bottom:1px solid var(--bd);padding-bottom:4px"><span class="ri"></span><span class="rn">Category</span><span class="ra" style="min-width:70px">Budget</span><span class="ra" style="min-width:70px">Actual</span><span class="ra" style="min-width:50px">Var</span><span style="width:32px"></span></div>`;
+    let totalBudgetI=0,totalActualI=0;
+    iCats.forEach(c=>{const planned=bpI[c.id]||0;const actual=yd.income?.[month]?.[c.id]||0;const variance=actual-planned;totalBudgetI+=planned;totalActualI+=actual;const varColor=variance>=0?"var(--ac)":"var(--dn)";h+=`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}</span><span class="ra" style="min-width:70px;color:var(--mu)">${fmt(planned)}</span><span class="ra" style="min-width:70px;color:${actual>0?"var(--ac)":"var(--mu)"}">${fmt(actual)}</span><span class="ra" style="min-width:50px;color:${varColor};font-size:10px">${planned?((variance>=0?"+":"")+pct(variance,planned)+"%"):"—"}</span><button class="re" onclick="modalEditBudget('incomePlan','${c.id}','${esc(c.name)}',${planned})">✎</button></div>`});
+    const varI=totalActualI-totalBudgetI;
+    h+=`<div class="rw" style="font-weight:700;border-top:2px solid var(--bd);padding-top:10px"><span class="ri">Σ</span><span class="rn">Gross Income</span><span class="ra" style="min-width:70px;color:var(--mu)">${fmt(totalBudgetI)}</span><span class="ra" style="min-width:70px;color:var(--ac)">${fmt(totalActualI)}</span><span class="ra" style="min-width:50px;color:${varI>=0?"var(--ac)":"var(--dn)"};font-size:10px">${totalBudgetI?((varI>=0?"+":"")+pct(varI,totalBudgetI)+"%"):"—"}</span><span style="width:32px"></span></div></div>`;
+
+    // Expense plan
+    h+=`<div class="sec"><div class="st" style="color:var(--dn)">📉 Expense Budget vs Actual — ${MF[MS.indexOf(month)]} ${year}<span class="sp"></span><button class="re" onclick="modalAddCat('expense')">+ Category</button></div>`;
+    h+=`<div class="rw" style="font-size:10px;color:var(--mu);font-weight:600;border-bottom:1px solid var(--bd);padding-bottom:4px"><span class="ri"></span><span class="rn">Category</span><span class="ra" style="min-width:70px">Budget</span><span class="ra" style="min-width:70px">Actual</span><span class="ra" style="min-width:50px">Var</span><span style="width:32px"></span></div>`;
+    let totalBudgetE=0,totalActualE=0;
+    eCats.forEach(c=>{
+      const pctBudget=bPct[c.id]||0;
+      let planned=bpE[c.id]||0;
+      if(pctBudget>0&&cs.income>0) planned=Math.round(cs.income*(pctBudget/100));
+      const actual=yd.expenses?.[month]?.[c.id]||0;const variance=actual-planned;totalBudgetE+=planned;totalActualE+=actual;
+      const overBudget=planned>0&&actual>planned;const varColor=planned===0?"var(--mu)":overBudget?"var(--dn)":"var(--ac)";
+      const pctLabel=pctBudget>0?` (${pctBudget}%)`:"";
+      h+=`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}<span style="font-size:9px;color:var(--a2)">${pctLabel}</span></span><span class="ra" style="min-width:70px;color:var(--mu)">${fmt(planned)}</span><span class="ra" style="min-width:70px;color:${overBudget?"var(--dn)":"var(--tx)"}">${fmt(actual)}${overBudget?" ⚠️":""}</span><span class="ra" style="min-width:50px;color:${varColor};font-size:10px">${planned?((variance<=0?"":"+")+(pct(variance,planned))+"%"):"—"}</span><button class="re" onclick="modalEditBudget('expensePlan','${c.id}','${esc(c.name)}',${bpE[c.id]||0},${pctBudget})">✎</button></div>`});
+    const varE=totalActualE-totalBudgetE;const overTotal=totalBudgetE>0&&totalActualE>totalBudgetE;
+    h+=`<div class="rw" style="font-weight:700;border-top:2px solid var(--bd);padding-top:10px"><span class="ri">Σ</span><span class="rn">Total Expenses</span><span class="ra" style="min-width:70px;color:var(--mu)">${fmt(totalBudgetE)}</span><span class="ra" style="min-width:70px;color:${overTotal?"var(--dn)":"var(--tx)"}">${fmt(totalActualE)}${overTotal?" ⚠️":""}</span><span class="ra" style="min-width:50px;color:${overTotal?"var(--dn)":"var(--ac)"};font-size:10px">${totalBudgetE?((varE<=0?"":"+")+(pct(varE,totalBudgetE))+"%"):"—"}</span><span style="width:32px"></span></div></div>`;
+
+    // Net summary
+    const netBudget=totalBudgetI-totalBudgetE;const netActual=totalActualI-totalActualE;
+    h+=`<div class="cds" style="grid-template-columns:1fr 1fr 1fr"><div class="cd"><div class="cl">Budgeted Net</div><div class="cvl" style="color:${netBudget>=0?"var(--ac)":"var(--dn)"};font-size:18px">${fmtS(netBudget)}</div></div><div class="cd"><div class="cl">Actual Net</div><div class="cvl" style="color:${netActual>=0?"var(--ac)":"var(--dn)"};font-size:18px">${fmtS(netActual)}</div></div><div class="cd"><div class="cl">Variance</div><div class="cvl" style="color:${netActual>=netBudget?"var(--ac)":"var(--dn)"};font-size:18px">${fmtS(netActual-netBudget)}</div></div></div>`;
   }
 
   // ═══ ENTRIES ═══
@@ -363,13 +403,152 @@ function render(){
   if(view==="goals"){const items=[{f:"monthlyIncome",l:"Monthly Income Goal",cur:cs.income},{f:"monthlyExpenseLimit",l:"Monthly Expense Limit",cur:cs.expenses},{f:"savingsTarget",l:"Monthly Savings Target",cur:yd.expenses?.[month]?.savings||0},{f:"emergencyFundPct",l:"Emergency Fund %",cur:goals.emergencyFundPct||8}];h+=`<div class="sec"><div class="st">🎯 Financial Goals</div>${items.map(g=>`<div class="gc">${ring(g.f==="emergencyFundPct"?g.cur:(goals[g.f]>0?pct(g.cur,goals[g.f]):0),"var(--ac)",56,g.l.split(" ").pop())}<div style="flex:1"><div style="font-size:12px;font-weight:600">${g.l}</div><div style="font-size:11px;color:var(--mu)">Target: ${g.f==="emergencyFundPct"?`${goals[g.f]||8}%`:fmt(goals[g.f])} · Current: ${g.f==="emergencyFundPct"?`${g.cur}%`:fmt(g.cur)}</div></div><button class="re" onclick="modalEditGoal('${g.f}','${esc(g.l)}',${goals[g.f]||0})">Edit</button></div>`).join("")}</div>`}
 
   // ═══ REPORTS ═══
-  if(view==="reports"){const qs=getQs(stats);h+=`<div class="sec"><div class="st">📊 Quarterly — ${year}</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">${qs.map((q,i)=>`<div class="qc"><div class="ql">${q.label} (${QS[i].join("–")})</div><div class="qv" style="color:var(--ac);font-size:16px">${fmt(q.income)}</div><div style="font-size:10px;color:var(--mu)">Income</div><div class="qv" style="color:var(--dn);font-size:14px;margin-top:4px">${fmt(q.expenses)}</div><div style="font-size:10px;color:var(--mu)">Expenses</div><div style="font-size:13px;font-weight:700;color:${q.net>=0?"var(--ac)":"var(--dn)"};margin-top:6px">${fmtS(q.net)}</div></div>`).join("")}</div></div>`;h+=`<div class="sec"><div class="st">📈 Annual — ${year}</div><div style="overflow-x:auto"><table class="stl"><thead><tr><th>Category</th>${MS.map(m=>`<th style="text-align:right;cursor:pointer" onclick="setMonth('${m}')">${m}</th>`).join("")}<th style="text-align:right">Total</th></tr></thead><tbody><tr style="background:var(--ag)"><td style="font-weight:600;color:var(--ac)">Gross Income</td>${MS.map(m=>`<td style="text-align:right;color:var(--ac)">${fmt(stats[m].income)}</td>`).join("")}<td style="text-align:right;font-weight:700;color:var(--ac)">${fmt(ytd2.income)}</td></tr>${eCats.map(c=>{const t=MS.reduce((s,m)=>s+(yd.expenses?.[m]?.[c.id]||0),0);if(!t)return"";return`<tr><td>${c.icon} ${esc(c.name)}</td>${MS.map(m=>`<td style="text-align:right">${fmt(yd.expenses?.[m]?.[c.id]||0)}</td>`).join("")}<td style="text-align:right;font-weight:600">${fmt(t)}</td></tr>`}).join("")}<tr style="background:var(--dg)" class="tr"><td style="color:var(--dn)">Total Expenses</td>${MS.map(m=>`<td style="text-align:right;color:var(--dn)">${fmt(stats[m].expenses)}</td>`).join("")}<td style="text-align:right;font-weight:700;color:var(--dn)">${fmt(ytd2.expenses)}</td></tr><tr class="tr"><td>Net Profit</td>${MS.map(m=>{const n=stats[m].net;return`<td style="text-align:right;font-weight:700;color:${n>=0?"var(--ac)":"var(--dn)"}">${n?fmtS(n):"—"}</td>`}).join("")}<td style="text-align:right;font-weight:700;color:${ytd2.net>=0?"var(--ac)":"var(--dn)"}">${fmtS(ytd2.net)}</td></tr></tbody></table></div></div>`;h+=`<div class="cds">${[{l:"Annual Income",v:ytd2.income,c:"var(--ac)",s:`Avg: ${fmt(ytd2.income/12)}/mo`},{l:"Annual Expenses",v:ytd2.expenses,c:"var(--dn)",s:`Avg: ${fmt(ytd2.expenses/12)}/mo`},{l:"Annual Net",v:ytd2.net,c:ytd2.net>=0?"var(--ac)":"var(--dn)",s:`Margin: ${ytd2.income?pct(ytd2.net,ytd2.income):0}%`}].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c}">${x.l.includes("Net")?fmtS(x.v):fmt(x.v)}</div><div class="css2">${x.s}</div></div>`).join("")}</div>`}
+  if(view==="reports"){
+    const qs=getQs(stats);
+    // Find months with data for projections
+    const monthsWithData=MS.filter(m=>stats[m].income>0||stats[m].expenses>0);
+    const mCount=monthsWithData.length||1;
+    const avgIncome=ytd2.income/mCount;const avgExpenses=ytd2.expenses/mCount;const avgNet=ytd2.net/mCount;
+    const projIncome=avgIncome*12;const projExpenses=avgExpenses*12;const projNet=projIncome-projExpenses;
+    const profitMargin=ytd2.income>0?((ytd2.net/ytd2.income)*100).toFixed(1):0;
+    const projMargin=projIncome>0?((projNet/projIncome)*100).toFixed(1):0;
+    const opexRatio=ytd2.income>0?((ytd2.expenses/ytd2.income)*100).toFixed(1):0;
+
+    // Profit margin & key metrics
+    h+=`<div class="sec"><div class="st">📐 Key Financial Metrics — ${year}</div><div class="cds" style="margin-bottom:0">${[
+      {l:"Profit Margin",v:`${profitMargin}%`,c:profitMargin>=20?"var(--ac)":profitMargin>=10?"var(--wn)":"var(--dn)",s:"Net Income ÷ Revenue"},
+      {l:"OpEx Ratio",v:`${opexRatio}%`,c:opexRatio<=70?"var(--ac)":opexRatio<=85?"var(--wn)":"var(--dn)",s:"Expenses ÷ Revenue"},
+      {l:"Avg Monthly Net",v:fmtS(avgNet),c:avgNet>=0?"var(--ac)":"var(--dn)",s:`Based on ${mCount} month${mCount>1?"s":""}`},
+      {l:"Revenue/Month",v:fmt(avgIncome),c:"var(--ac)",s:"Average monthly income"}
+    ].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c};font-size:20px">${x.v}</div><div class="css2">${x.s}</div></div>`).join("")}</div></div>`;
+
+    // Annual projections
+    h+=`<div class="sec"><div class="st">🔮 Annual Projections — ${year}</div><p style="font-size:11px;color:var(--mu);margin-bottom:12px">Based on ${mCount}-month average, projected to full year:</p><div class="cds" style="margin-bottom:0">${[
+      {l:"Projected Income",v:fmt(projIncome),c:"var(--ac)",s:`${fmt(avgIncome)}/mo × 12`},
+      {l:"Projected Expenses",v:fmt(projExpenses),c:"var(--dn)",s:`${fmt(avgExpenses)}/mo × 12`},
+      {l:"Projected Net Profit",v:fmtS(projNet),c:projNet>=0?"var(--ac)":"var(--dn)",s:`Margin: ${projMargin}%`}
+    ].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c};font-size:18px">${x.v}</div><div class="css2">${x.s}</div></div>`).join("")}</div></div>`;
+
+    // Quarterly
+    h+=`<div class="sec"><div class="st">📊 Quarterly Report — ${year}</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">${qs.map((q,i)=>{const qMargin=q.income>0?((q.net/q.income)*100).toFixed(0):"0";return`<div class="qc"><div class="ql">${q.label} (${QS[i].join("–")})</div><div class="qv" style="color:var(--ac);font-size:16px">${fmt(q.income)}</div><div style="font-size:10px;color:var(--mu)">Income</div><div class="qv" style="color:var(--dn);font-size:14px;margin-top:4px">${fmt(q.expenses)}</div><div style="font-size:10px;color:var(--mu)">Expenses</div><div style="font-size:13px;font-weight:700;color:${q.net>=0?"var(--ac)":"var(--dn)"};margin-top:6px">${fmtS(q.net)}</div><div style="font-size:10px;color:var(--mu)">Margin: ${qMargin}%</div></div>`}).join("")}</div></div>`;
+
+    // Expense breakdown by % of income
+    h+=`<div class="sec"><div class="st">📊 Expense Breakdown (% of Income)</div>`;
+    if(ytd2.income>0){
+      const expSorted=eCats.map(c=>({...c,total:MS.reduce((s,m)=>s+(yd.expenses?.[m]?.[c.id]||0),0)})).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+      expSorted.forEach(c=>{const p2=((c.total/ytd2.income)*100).toFixed(1);h+=`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}</span><div class="rb2">${minibar(c.total,ytd2.income,"var(--dn)")}</div><span class="ra" style="min-width:60px">${p2}%</span><span class="ra">${fmt(c.total)}</span></div>`});
+    } else { h+=`<div class="empty-msg">No income data yet.</div>`; }
+    h+=`</div>`;
+
+    // Annual summary table
+    h+=`<div class="sec"><div class="st">📈 Annual Summary — ${year}</div><div style="overflow-x:auto"><table class="stl"><thead><tr><th>Category</th>${MS.map(m=>`<th style="text-align:right;cursor:pointer" onclick="setMonth('${m}')">${m}</th>`).join("")}<th style="text-align:right">Total</th></tr></thead><tbody>`;
+    h+=`<tr style="background:var(--ag)"><td style="font-weight:600;color:var(--ac)">Gross Income</td>${MS.map(m=>`<td style="text-align:right;color:var(--ac)">${fmt(stats[m].income)}</td>`).join("")}<td style="text-align:right;font-weight:700;color:var(--ac)">${fmt(ytd2.income)}</td></tr>`;
+    eCats.forEach(c=>{const t=MS.reduce((s,m)=>s+(yd.expenses?.[m]?.[c.id]||0),0);if(!t)return;h+=`<tr><td>${c.icon} ${esc(c.name)}</td>${MS.map(m=>`<td style="text-align:right">${fmt(yd.expenses?.[m]?.[c.id]||0)}</td>`).join("")}<td style="text-align:right;font-weight:600">${fmt(t)}</td></tr>`});
+    h+=`<tr style="background:var(--dg)" class="tr"><td style="color:var(--dn)">Total Expenses</td>${MS.map(m=>`<td style="text-align:right;color:var(--dn)">${fmt(stats[m].expenses)}</td>`).join("")}<td style="text-align:right;font-weight:700;color:var(--dn)">${fmt(ytd2.expenses)}</td></tr>`;
+    h+=`<tr class="tr"><td>Net Profit</td>${MS.map(m=>{const n=stats[m].net;return`<td style="text-align:right;font-weight:700;color:${n>=0?"var(--ac)":"var(--dn)"}">${n?fmtS(n):"—"}</td>`}).join("")}<td style="text-align:right;font-weight:700;color:${ytd2.net>=0?"var(--ac)":"var(--dn)"}">${fmtS(ytd2.net)}</td></tr>`;
+    h+=`<tr><td style="color:var(--mu)">Profit Margin</td>${MS.map(m=>{const margin=stats[m].income>0?((stats[m].net/stats[m].income)*100).toFixed(0)+"%":"—";const c2=stats[m].net>=0?"var(--ac)":"var(--dn)";return`<td style="text-align:right;color:${c2}">${margin}</td>`}).join("")}<td style="text-align:right;font-weight:700;color:${ytd2.net>=0?"var(--ac)":"var(--dn)"}">${profitMargin}%</td></tr>`;
+    h+=`</tbody></table></div></div>`;
+
+    // YTD cards
+    h+=`<div class="cds">${[{l:"Annual Income",v:ytd2.income,c:"var(--ac)",s:`Avg: ${fmt(avgIncome)}/mo`},{l:"Annual Expenses",v:ytd2.expenses,c:"var(--dn)",s:`Avg: ${fmt(avgExpenses)}/mo`},{l:"Annual Net",v:ytd2.net,c:ytd2.net>=0?"var(--ac)":"var(--dn)",s:`Margin: ${profitMargin}%`}].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c}">${x.l.includes("Net")?fmtS(x.v):fmt(x.v)}</div><div class="css2">${x.s}</div></div>`).join("")}</div>`;
+
+    // ═══ PROFIT & LOSS STATEMENT ═══
+    const grossMargin=ytd2.income>0?((ytd2.income-ytd2.expenses)/ytd2.income*100).toFixed(1):"0";
+    const netMargin=profitMargin;
+    h+=`<div class="sec"><div class="st">📋 Profit & Loss Statement — ${year}</div><div style="overflow-x:auto"><table class="stl"><tbody>`;
+    h+=`<tr style="background:var(--ag)"><td style="font-weight:700;color:var(--ac)">Gross Revenue</td><td style="text-align:right;font-weight:700;color:var(--ac)">${fmt(ytd2.income)}</td></tr>`;
+    iCats.forEach(c=>{const t=MS.reduce((s,m)=>s+(yd.income?.[m]?.[c.id]||0),0);if(!t)return;h+=`<tr><td style="padding-left:20px;color:var(--mu)">${c.icon} ${esc(c.name)}</td><td style="text-align:right">${fmt(t)}</td></tr>`});
+    h+=`<tr style="border-top:2px solid var(--bd)"><td style="font-weight:700;color:var(--dn)">Operating Expenses</td><td style="text-align:right;font-weight:700;color:var(--dn)">${fmt(ytd2.expenses)}</td></tr>`;
+    const expSorted2=eCats.map(c=>({...c,total:MS.reduce((s,m)=>s+(yd.expenses?.[m]?.[c.id]||0),0)})).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+    expSorted2.forEach(c=>{const pOfInc=ytd2.income>0?((c.total/ytd2.income)*100).toFixed(1):"0";h+=`<tr><td style="padding-left:20px;color:var(--mu)">${c.icon} ${esc(c.name)} <span style="font-size:9px;color:var(--a2)">${pOfInc}%</span></td><td style="text-align:right">${fmt(c.total)}</td></tr>`});
+    h+=`<tr style="border-top:3px double var(--bd);background:${ytd2.net>=0?"var(--ag)":"var(--dg)"}"><td style="font-weight:700;font-size:14px">Net Profit / (Loss)</td><td style="text-align:right;font-weight:700;font-size:14px;color:${ytd2.net>=0?"var(--ac)":"var(--dn)"}">${fmtS(ytd2.net)}</td></tr>`;
+    h+=`<tr><td style="color:var(--mu)">Gross Profit Margin</td><td style="text-align:right;font-weight:600">${grossMargin}%</td></tr>`;
+    h+=`<tr><td style="color:var(--mu)">Net Profit Margin</td><td style="text-align:right;font-weight:600;color:${netMargin>=15?"var(--ac)":netMargin>=5?"var(--wn)":"var(--dn)"}">${netMargin}%</td></tr>`;
+    h+=`<tr><td style="color:var(--mu)">OpEx Ratio</td><td style="text-align:right;font-weight:600">${opexRatio}%</td></tr>`;
+    h+=`</tbody></table></div></div>`;
+
+    // ═══ CASH FLOW REPORT ═══
+    let runningBalance=0;
+    h+=`<div class="sec"><div class="st">💰 Cash Flow Report — ${year}</div><div style="overflow-x:auto"><table class="stl"><thead><tr><th>Month</th><th style="text-align:right">Inflow</th><th style="text-align:right">Outflow</th><th style="text-align:right">Net Flow</th><th style="text-align:right">Running Balance</th></tr></thead><tbody>`;
+    MS.forEach(m=>{const s=stats[m];runningBalance+=s.net;const hasData=s.income>0||s.expenses>0;h+=`<tr${!hasData?" style=\"opacity:.4\"":""}><td>${m}</td><td style="text-align:right;color:var(--ac)">${fmt(s.income)}</td><td style="text-align:right;color:var(--dn)">${fmt(s.expenses)}</td><td style="text-align:right;color:${s.net>=0?"var(--ac)":"var(--dn)"}; font-weight:600">${s.net?fmtS(s.net):"—"}</td><td style="text-align:right;font-weight:600;color:${runningBalance>=0?"var(--ac)":"var(--dn)"}">${runningBalance?fmtS(runningBalance):"—"}</td></tr>`});
+    h+=`<tr class="tr"><td>Total</td><td style="text-align:right;color:var(--ac);font-weight:700">${fmt(ytd2.income)}</td><td style="text-align:right;color:var(--dn);font-weight:700">${fmt(ytd2.expenses)}</td><td style="text-align:right;font-weight:700;color:${ytd2.net>=0?"var(--ac)":"var(--dn)"}">${fmtS(ytd2.net)}</td><td style="text-align:right;font-weight:700;color:${runningBalance>=0?"var(--ac)":"var(--dn)"}">${fmtS(runningBalance)}</td></tr>`;
+    h+=`</tbody></table></div>`;
+    // Cash flow sparkline
+    let rb2=0;const cfVals=MS.map(m=>{rb2+=stats[m].net;return rb2});
+    h+=`<div style="margin-top:12px"><div class="cl">Running Balance Trend</div>${spark(cfVals,rb2>=0?pal.accent:pal.danger,300,50)}</div></div>`;
+
+    // ═══ BREAK-EVEN ANALYSIS ═══
+    const fixedCosts=co.fixedCosts||0;
+    const variableCosts=fixedCosts>0?ytd2.expenses-fixedCosts*mCount:0;
+    const variableRatio=ytd2.income>0&&fixedCosts>0?(variableCosts/ytd2.income):0;
+    const breakEvenRevenue=fixedCosts>0&&variableRatio<1?fixedCosts/(1-variableRatio):0;
+    const breakEvenDays=avgIncome>0?Math.ceil((avgExpenses/avgIncome)*(co.workingDaysPerMonth||22)):0;
+    const daysToBreakEven=avgIncome>0?Math.ceil(avgExpenses/(avgIncome/(co.workingDaysPerMonth||22))):0;
+    h+=`<div class="sec"><div class="st">📍 Break-Even Analysis — ${year}</div>`;
+    if(fixedCosts>0){
+      h+=`<div class="cds" style="margin-bottom:10px">${[
+        {l:"Monthly Fixed Costs",v:fmt(fixedCosts),c:"var(--dn)",s:"Rent, salaries, etc."},
+        {l:"Break-Even Revenue",v:fmt(breakEvenRevenue),c:"var(--wn)",s:"Monthly revenue needed"},
+        {l:"Current vs Break-Even",v:avgIncome>breakEvenRevenue?"✅ Above":"⚠️ Below",c:avgIncome>breakEvenRevenue?"var(--ac)":"var(--dn)",s:avgIncome>breakEvenRevenue?`${fmt(avgIncome-breakEvenRevenue)} cushion`:"Need "+fmt(breakEvenRevenue-avgIncome)+" more"}
+      ].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c};font-size:18px">${x.v}</div><div class="css2">${x.s}</div></div>`).join("")}</div>`;
+    } else {
+      h+=`<div style="font-size:12px;color:var(--mu);margin-bottom:10px">To enable full break-even analysis, set your <strong>monthly fixed costs</strong> in Settings → Clinic / Company.</div>`;
+    }
+    h+=`<div class="cds" style="margin-bottom:0">${[
+      {l:"Days to Cover Expenses",v:`${daysToBreakEven} days`,c:daysToBreakEven<=(co.workingDaysPerMonth||22)?"var(--ac)":"var(--dn)",s:`of ${co.workingDaysPerMonth||22} working days`},
+      {l:"Avg Daily Revenue",v:fmt(avgIncome/(co.workingDaysPerMonth||22)),c:"var(--ac)",s:"Income ÷ working days"},
+      {l:"Avg Daily Expenses",v:fmt(avgExpenses/(co.workingDaysPerMonth||22)),c:"var(--dn)",s:"Expenses ÷ working days"}
+    ].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c};font-size:18px">${x.v}</div><div class="css2">${x.s}</div></div>`).join("")}</div></div>`;
+
+    // ═══ GROWTH TREND REPORT ═══
+    h+=`<div class="sec"><div class="st">📈 Growth Trend Report — ${year}</div>`;
+    if(monthsWithData.length>=2){
+      h+=`<div style="overflow-x:auto"><table class="stl"><thead><tr><th>Month</th><th style="text-align:right">Income</th><th style="text-align:right">MoM Growth</th><th style="text-align:right">Expenses</th><th style="text-align:right">MoM Change</th><th style="text-align:right">Net</th><th style="text-align:right">Margin</th></tr></thead><tbody>`;
+      monthsWithData.forEach((m,i)=>{
+        const s=stats[m];const margin=s.income>0?((s.net/s.income)*100).toFixed(0):"0";
+        let incGrowth="—",expGrowth="—",incGColor="var(--mu)",expGColor="var(--mu)";
+        if(i>0){const prev=stats[monthsWithData[i-1]];if(prev.income>0){const g=((s.income-prev.income)/prev.income*100).toFixed(1);incGrowth=(g>=0?"+":"")+g+"%";incGColor=g>=0?"var(--ac)":"var(--dn)"}if(prev.expenses>0){const g=((s.expenses-prev.expenses)/prev.expenses*100).toFixed(1);expGrowth=(g>=0?"+":"")+g+"%";expGColor=g<=0?"var(--ac)":"var(--dn)"}}
+        h+=`<tr><td style="font-weight:600">${m}</td><td style="text-align:right;color:var(--ac)">${fmt(s.income)}</td><td style="text-align:right;color:${incGColor}">${incGrowth}</td><td style="text-align:right;color:var(--dn)">${fmt(s.expenses)}</td><td style="text-align:right;color:${expGColor}">${expGrowth}</td><td style="text-align:right;font-weight:600;color:${s.net>=0?"var(--ac)":"var(--dn)"}">${fmtS(s.net)}</td><td style="text-align:right">${margin}%</td></tr>`;
+      });
+      h+=`</tbody></table></div>`;
+      // Growth sparklines
+      h+=`<div class="cds" style="grid-template-columns:1fr 1fr;margin-top:12px"><div class="cd"><div class="cl">Income Growth</div>${spark(monthsWithData.map(m=>stats[m].income),pal.accent,200,40)}</div><div class="cd"><div class="cl">Net Profit Trend</div>${spark(monthsWithData.map(m=>stats[m].net),pal.accent2||pal.accent,200,40)}</div></div>`;
+    } else {
+      h+=`<div class="empty-msg">Need at least 2 months of data to show growth trends.</div>`;
+    }
+    h+=`</div>`;
+
+    // ═══ REVENUE PER CHAIR / PER DAY ═══
+    const chairs=co.chairs||3;const wDays=co.workingDaysPerMonth||22;
+    const totalWorkDays=wDays*mCount;
+    const revPerChairMonth=avgIncome/chairs;
+    const revPerChairDay=revPerChairMonth/wDays;
+    const revPerDay=avgIncome/wDays;
+    const profitPerDay=avgNet/wDays;
+    const profitPerChairDay=profitPerDay/chairs;
+    h+=`<div class="sec"><div class="st">🪑 Revenue Per Chair / Per Day — ${year}</div>`;
+    h+=`<div style="font-size:11px;color:var(--mu);margin-bottom:12px">${chairs} chair${chairs>1?"s":""} · ${wDays} working days/month · Based on ${mCount} month${mCount>1?"s":""} of data</div>`;
+    h+=`<div class="cds" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:0">${[
+      {l:"Revenue / Day",v:fmt(revPerDay),c:"var(--ac)",s:"Total daily revenue"},
+      {l:"Revenue / Chair / Day",v:fmt(revPerChairDay),c:"var(--ac)",s:"Per chair per day"},
+      {l:"Revenue / Chair / Month",v:fmt(revPerChairMonth),c:"var(--ac)",s:"Per chair monthly"},
+      {l:"Profit / Day",v:fmtS(profitPerDay),c:profitPerDay>=0?"var(--ac)":"var(--dn)",s:"Net profit per day"},
+      {l:"Profit / Chair / Day",v:fmtS(profitPerChairDay),c:profitPerChairDay>=0?"var(--ac)":"var(--dn)",s:"Net per chair per day"},
+      {l:"Chair Utilization Target",v:fmt(avgExpenses/chairs/wDays),c:"var(--wn)",s:"Min rev/chair/day to break even"}
+    ].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c};font-size:17px">${x.v}</div><div class="css2">${x.s}</div></div>`).join("")}</div>`;
+    // Monthly per-chair table
+    h+=`<div style="overflow-x:auto;margin-top:12px"><table class="stl"><thead><tr><th>Month</th><th style="text-align:right">Rev/Day</th><th style="text-align:right">Rev/Chair/Day</th><th style="text-align:right">Profit/Day</th></tr></thead><tbody>`;
+    monthsWithData.forEach(m=>{const s=stats[m];const rd=s.income/wDays;const rcd=rd/chairs;const pd=s.net/wDays;h+=`<tr><td>${m}</td><td style="text-align:right;color:var(--ac)">${fmt(rd)}</td><td style="text-align:right">${fmt(rcd)}</td><td style="text-align:right;color:${pd>=0?"var(--ac)":"var(--dn)"}">${fmtS(pd)}</td></tr>`});
+    h+=`</tbody></table></div>`;
+    h+=`<div style="font-size:10px;color:var(--mu);margin-top:8px">💡 You can change chairs and working days in Settings → Clinic / Company</div></div>`;
+  }
 
   // ═══ SETTINGS ═══
   if(view==="settings"){
-    h+=`<div class="sec"><div class="st">☁️ Google Sheets Sync</div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span id="sync-badge2"></span><button class="re" style="font-size:11px;padding:5px 12px" onclick="showSetup=true;render()">⚙️ ${SCRIPT_URL?"Reconfigure":"Connect Google Sheets"}</button>${SCRIPT_URL?`<button class="re" style="font-size:11px;padding:5px 12px" onclick="doForceSync()">🔄 Force Sync</button>`:""}</div></div>`;
-    h+=`<div class="sec"><div class="st">🏢 Clinic / Company</div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Name</label><input style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:8px" value="${esc(co.name||"")}" oninput="upd(d=>{d.company.name=this.value})"><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block;margin-top:8px">Subtitle</label><input style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:8px" value="${esc(co.subtitle||"")}" oninput="upd(d=>{d.company.subtitle=this.value})"><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block;margin-top:8px">Logo</label><div style="display:flex;align-items:center;gap:10px">${co.logoDataUrl?`<div style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:1px solid var(--bd)"><img src="${co.logoDataUrl}" style="width:100%;height:100%;object-fit:cover"></div>`:""}<button class="b2" onclick="document.getElementById('logo-input').click()">Upload</button>${co.logoDataUrl?`<button class="b3" style="padding:6px 12px" onclick="upd(d=>{d.company.logoDataUrl=null})">Remove</button>`:""}</div></div>`;
-    h+=`<div class="sec"><div class="st">🎨 Color Palette</div><div class="pg">${PRESETS.map(p=>{const act=p.c.accent===pal.accent&&p.c.bg===pal.bg;return`<div class="po ${act?"act":""}" style="background:${p.c.surface}" onclick='applyPreset(${JSON.stringify(p.c)})'><div class="pd"><span style="background:${p.c.accent}"></span><span style="background:${p.c.accent2}"></span><span style="background:${p.c.danger}"></span></div><div class="pl" style="color:${p.c.muted}">${p.name}</div></div>`}).join("")}</div><div style="margin-top:10px;font-size:11px;color:var(--mu);font-weight:600;margin-bottom:6px">Custom</div>${[["bg","Background"],["surface","Surface"],["accent","Accent"],["accent2","Accent 2"],["danger","Danger"],["warning","Warning"],["text","Text"],["muted","Muted"],["border","Border"]].map(([k,l])=>`<div class="cr"><label style="font-size:11px;color:var(--mu)">${l}</label><input type="color" value="${pal[k]||"#000"}" oninput="upd(d=>{d.palette.${k}=this.value})"><span style="font-size:10px;color:var(--mu);font-family:monospace">${pal[k]}</span></div>`).join("")}</div>`;
+    h+=`<div class="sec"><div class="st">☁️ Google Sheets Sync</div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span id="sync-badge2"></span><button class="re" style="font-size:11px;padding:5px 12px" onclick="showSetup=true;render()">⚙️ ${SCRIPT_URL?"Reconfigure":"Connect Google Sheets"}</button>${SCRIPT_URL?`<button class="re" style="font-size:11px;padding:5px 12px" onclick="doForceSync()">🔄 Force Sync</button><button class="b1" style="font-size:11px;padding:5px 14px" onclick="doPushToCloud()">⬆️ Push to Cloud</button>`:""}</div>${_pendingSync?`<div style="font-size:11px;color:var(--wn);margin-top:8px">⚠️ You have unsaved changes. Click "Push to Cloud" to sync.</div>`:""}</div>`;
+    h+=`<div class="sec"><div class="st">🏢 Clinic / Company</div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Name</label><input style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:8px" value="${esc(co.name||"")}" onchange="upd(d=>{d.company.name=this.value})" oninput="D.company.name=this.value;saveLocal()"><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block;margin-top:8px">Subtitle</label><input style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:8px" value="${esc(co.subtitle||"")}" onchange="upd(d=>{d.company.subtitle=this.value})" oninput="D.company.subtitle=this.value;saveLocal()"><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block;margin-top:8px">Logo</label><div style="display:flex;align-items:center;gap:10px">${co.logoDataUrl?`<div style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:1px solid var(--bd)"><img src="${co.logoDataUrl}" style="width:100%;height:100%;object-fit:cover"></div>`:""}<button class="b2" onclick="document.getElementById('logo-input').click()">Upload</button>${co.logoDataUrl?`<button class="b3" style="padding:6px 12px" onclick="upd(d=>{d.company.logoDataUrl=null})">Remove</button>`:""}</div></div>`;
+    h+=`<div class="sec"><div class="st">🪑 Operational Settings</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Dental Chairs</label><input type="number" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit" value="${co.chairs||3}" onchange="upd(d=>{d.company.chairs=+this.value||3})"></div><div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Working Days/Month</label><input type="number" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit" value="${co.workingDaysPerMonth||22}" onchange="upd(d=>{d.company.workingDaysPerMonth=+this.value||22})"></div><div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Monthly Fixed Costs (₱)</label><input type="number" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit" value="${co.fixedCosts||0}" onchange="upd(d=>{d.company.fixedCosts=+this.value||0})"></div></div><div style="font-size:10px;color:var(--mu);margin-top:8px">Used for Break-Even Analysis and Revenue Per Chair reports. Fixed costs = rent, salaries, insurance, etc.</div></div>`;
+    h+=`<div class="sec"><div class="st">🎨 Color Palette</div><div class="pg">${PRESETS.map(p=>{const act=p.c.accent===pal.accent&&p.c.bg===pal.bg;return`<div class="po ${act?"act":""}" style="background:${p.c.surface}" onclick='applyPreset(${JSON.stringify(p.c)})'><div class="pd"><span style="background:${p.c.accent}"></span><span style="background:${p.c.accent2}"></span><span style="background:${p.c.danger}"></span></div><div class="pl" style="color:${p.c.muted}">${p.name}</div></div>`}).join("")}</div><div style="margin-top:10px;font-size:11px;color:var(--mu);font-weight:600;margin-bottom:6px">Custom</div>${[["bg","Background"],["surface","Surface"],["accent","Accent"],["accent2","Accent 2"],["danger","Danger"],["warning","Warning"],["text","Text"],["muted","Muted"],["border","Border"]].map(([k,l])=>`<div class="cr"><label style="font-size:11px;color:var(--mu)">${l}</label><input type="color" value="${pal[k]||"#000"}" onchange="upd(d=>{d.palette.${k}=this.value})"><span style="font-size:10px;color:var(--mu);font-family:monospace">${pal[k]}</span></div>`).join("")}</div>`;
     h+=`<div class="sec"><div class="st">💰 Income Sources<span class="sp"></span><button class="re" onclick="modalAddCat('income')">+ Add</button></div>${iCats.map(c=>`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}</span><button class="re" onclick="modalEditCat('income','${c.id}','${esc(c.icon)}','${esc(c.name)}')">✏️</button><button class="b3" onclick="if(confirm('Delete?'))doDelCat('income','${c.id}')">✕</button></div>`).join("")}</div>`;
     h+=`<div class="sec"><div class="st">📉 Expense Categories<span class="sp"></span><button class="re" onclick="modalAddCat('expense')">+ Add</button></div>${eCats.map(c=>`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}</span><button class="re" onclick="modalEditCat('expense','${c.id}','${esc(c.icon)}','${esc(c.name)}')">✏️</button><button class="b3" onclick="if(confirm('Delete?'))doDelCat('expense','${c.id}')">✕</button></div>`).join("")}</div>`;
     h+=`<div class="sec"><div class="st">🗃️ Data</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="b2" onclick="doExport()">Export JSON</button><button class="b3" style="padding:8px 16px;font-size:12px" onclick="if(confirm('Reset ALL data?'))doReset()">Reset All</button></div></div>`;
@@ -390,10 +569,32 @@ function setView(v){view=v;closeModal();render()}
 function setYear(y){year=y;ensureYr(D,y);saveLocal();render()}
 function setMonth(m){month=m;render()}
 function applyPreset(c){upd(d=>{d.palette=JSON.parse(JSON.stringify(c))})}
-async function doForceSync(){if(!SCRIPT_URL)return;const cd=await cloudLoad();if(cd&&cd.company){if(confirm("Replace local data with cloud data?")){const m=mkDefault();Object.keys(m).forEach(k=>{if(cd[k]!==undefined)m[k]=cd[k]});D=m;saveLocal();render()}}}
+async function doForceSync(){if(!SCRIPT_URL)return;const choice=prompt("Type PULL to download cloud data, or PUSH to upload local data to cloud:","PUSH");if(!choice)return;if(choice.toUpperCase()==="PULL"){const cd=await cloudLoad();if(cd&&cd.company){const m=mkDefault();Object.keys(m).forEach(k=>{if(cd[k]!==undefined)m[k]=cd[k]});D=m;saveLocal();render();alert("Cloud data loaded!")}else{alert("No data found in cloud or load failed.")}}else if(choice.toUpperCase()==="PUSH"){await doPushToCloud()}else{alert("Please type PULL or PUSH")}}
 
 function modalEditVal(dt,cid,cn,v){openModal(`<h3>Edit ${cn}</h3><label>${MF[MS.indexOf(month)]} ${year} (₱)</label><input id="mv" type="number" value="${v||""}" placeholder="0" autofocus><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doSetVal('${dt}','${cid}')">Save</button></div>`);setTimeout(()=>{const el=document.getElementById("mv");if(el){el.focus();el.select();el.onkeydown=e=>{if(e.key==="Enter")doSetVal(dt,cid)}}},50)}
 function doSetVal(dt,cid){const v=+document.getElementById("mv").value||0;upd(d=>{ensureYr(d,year);d.years[year][dt][month][cid]=v});closeModal()}
+
+function modalEditBudget(planType,cid,cn,currentVal,currentPct){
+  const isExpense=planType==="expensePlan";
+  const pctVal=currentPct||0;
+  openModal(`<h3>Budget: ${cn}</h3><label>${MF[MS.indexOf(month)]} ${year} — Fixed Amount (₱)</label><input id="mbv" type="number" value="${currentVal||""}" placeholder="0">${isExpense?`<label>OR Set as % of Gross Income</label><input id="mbp" type="number" value="${pctVal||""}" placeholder="e.g. 10 for 10%" min="0" max="100"><div style="font-size:10px;color:var(--mu);margin-top:4px">If % is set, budget auto-calculates from income each month. Set to 0 to use fixed amount instead.</div>`:""}<div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doSaveBudget('${planType}','${cid}')">Save</button></div>`);
+  setTimeout(()=>{const el=document.getElementById("mbv");if(el){el.focus();el.select()}},50);
+}
+function doSaveBudget(planType,cid){
+  const v=+document.getElementById("mbv").value||0;
+  const pEl=document.getElementById("mbp");
+  const p2=pEl?(+pEl.value||0):0;
+  upd(d=>{
+    ensureYr(d,year);
+    if(!d.years[year].budget)d.years[year].budget={incomePlan:{},expensePlan:{}};
+    if(!d.years[year].budget[planType])d.years[year].budget[planType]={};
+    if(!d.years[year].budget[planType][month])d.years[year].budget[planType][month]={};
+    d.years[year].budget[planType][month][cid]=v;
+    if(p2>0){if(!d.budgetPct)d.budgetPct={};d.budgetPct[cid]=p2}
+    else if(d.budgetPct&&d.budgetPct[cid])delete d.budgetPct[cid];
+  });
+  closeModal();
+}
 function modalEditCat(ct,id,icon,name){openModal(`<h3>Edit Category</h3><label>Icon</label><input id="mci" value="${icon}" maxlength="4"><label>Name</label><input id="mcn" value="${name}"><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doEditCat('${ct}','${id}')">Save</button></div>`)}
 function doEditCat(ct,id){const ic=document.getElementById("mci").value,nm=document.getElementById("mcn").value;upd(d=>{const c=d[ct+"Cats"].find(x=>x.id===id);if(c){c.icon=ic;c.name=nm}});closeModal()}
 function modalAddCat(ct){const label=ct==="income"?"Income Source":"Expense Category";openModal(`<h3>Add ${label}</h3><label>Icon</label><input id="mci" value="${ct==="income"?"💰":"📄"}" maxlength="4"><label>Name</label><input id="mcn" placeholder="e.g. ${ct==="income"?"Associate Dr. X":"Lab Equipment"}"><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doAddCat('${ct}')">Add</button></div>`)}
@@ -413,6 +614,35 @@ function doApplyRec(id){const rec=D.recurring.find(r=>r.id===id);if(!rec)return;
 
 function modalEditGoal(f,l,v){const u=f==="emergencyFundPct"?"Percentage (%)":"Amount (₱)";openModal(`<h3>${l}</h3><label>${u}</label><input id="mgv" type="number" value="${v||""}" placeholder="0" autofocus><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doEditGoal('${f}')">Save</button></div>`);setTimeout(()=>{const el=document.getElementById("mgv");if(el){el.focus();el.select();el.onkeydown=e=>{if(e.key==="Enter")doEditGoal(f)}}},50)}
 function doEditGoal(f){upd(d=>{d.goals[f]=+document.getElementById("mgv").value||0});closeModal()}
+
+function modalEditBudget(planType,cid,cn,v,pctVal){
+  const isExpense=planType==="expensePlan";
+  const pctField=isExpense?`<label>Or set as % of Gross Income</label><input id="mbp" type="number" value="${pctVal||""}" placeholder="e.g. 10 for 10%" step="0.5"><div style="font-size:10px;color:var(--mu);margin-top:4px">If % is set, it overrides the fixed amount and auto-calculates from actual income each month.</div>`:""
+  openModal(`<h3>Budget: ${cn}</h3><label>${MF[MS.indexOf(month)]} ${year} — Fixed Amount (₱)</label><input id="mbv" type="number" value="${v||""}" placeholder="0" autofocus>${pctField}<div style="margin-top:8px;font-size:10px;color:var(--mu)"><button class="re" style="font-size:10px" onclick="doCopyBudgetToAll('${planType}','${cid}')">📋 Copy to all months in ${year}</button></div><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doSaveBudget('${planType}','${cid}',${isExpense})">Save</button></div>`);
+  setTimeout(()=>{const el=document.getElementById("mbv");if(el){el.focus();el.select();el.onkeydown=e=>{if(e.key==="Enter")doSaveBudget(planType,cid,isExpense)}}},50)
+}
+function doSaveBudget(planType,cid,isExpense){
+  const v=+document.getElementById("mbv").value||0;
+  const p=isExpense?(+document.getElementById("mbp")?.value||0):0;
+  upd(d=>{
+    ensureYr(d,year);
+    if(!d.years[year].budget)d.years[year].budget={incomePlan:{},expensePlan:{}};
+    if(!d.years[year].budget[planType])d.years[year].budget[planType]={};
+    if(!d.years[year].budget[planType][month])d.years[year].budget[planType][month]={};
+    d.years[year].budget[planType][month][cid]=v;
+    if(isExpense){if(!d.budgetPct)d.budgetPct={};if(p>0)d.budgetPct[cid]=p;else delete d.budgetPct[cid]}
+  });closeModal()
+}
+function doCopyBudgetToAll(planType,cid){
+  const v=+document.getElementById("mbv").value||0;
+  if(!v&&!confirm("Copy ₱0 to all months?"))return;
+  upd(d=>{
+    ensureYr(d,year);
+    if(!d.years[year].budget)d.years[year].budget={incomePlan:{},expensePlan:{}};
+    if(!d.years[year].budget[planType])d.years[year].budget[planType]={};
+    MS.forEach(m=>{if(!d.years[year].budget[planType][m])d.years[year].budget[planType][m]={};d.years[year].budget[planType][m][cid]=v})
+  });closeModal()
+}
 
 function doExport(){const j=JSON.stringify(D,null,2);const b=new Blob([j],{type:"application/json"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=`kdental-backup-${year}.json`;a.click();URL.revokeObjectURL(u)}
 function doReset(){D=mkDefault();ensureYr(D,year);saveLocal();cloudSave(D);render()}
