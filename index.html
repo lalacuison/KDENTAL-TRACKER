@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KDental Pro — Income & Expense Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b1015;--surface:#111920;--s2:#182028;--s3:#1f2a34;--bd:#253040;--tx:#e4e9f0;--mu:#6b7d93;--ac:#26d9a0;--a2:#4da6ff;--dn:#ff5c5c;--wn:#f0b429;--ag:#26d9a022;--dg:#ff5c5c1a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+.app{max-width:1000px;margin:0 auto;padding:16px 14px 70px}
+.hdr{display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+.lb{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,var(--ac),var(--a2));box-shadow:0 4px 20px rgba(38,217,160,.2);cursor:pointer}
+.lb img{width:100%;height:100%;object-fit:cover}
+.cn{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;letter-spacing:-.4px}
+.csb{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-weight:500}
+.nv{display:flex;gap:2px;background:var(--surface);border-radius:9px;padding:2px;overflow-x:auto;margin-bottom:10px}.nv::-webkit-scrollbar{height:0}
+.nv button{padding:6px 10px;border:none;border-radius:7px;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit;color:var(--mu);background:none;white-space:nowrap}
+.nv button.a{background:var(--s3);color:var(--tx)}.nv button:hover:not(.a){color:var(--tx)}
+.tb{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.ys{background:var(--surface);border:1px solid var(--bd);color:var(--tx);padding:5px 10px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer}.ys:focus{outline:none;border-color:var(--ac)}
+.mbr{display:flex;gap:2px;overflow-x:auto;padding-bottom:2px;flex:1}.mbr::-webkit-scrollbar{height:0}
+.mb{padding:5px 10px;border:none;border-radius:7px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;color:var(--mu);background:none;flex-shrink:0;transition:all .15s}
+.mb.a{background:var(--ac);color:var(--bg);font-weight:700}.mb:hover:not(.a){background:var(--s2);color:var(--tx)}
+.cds{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px}
+.cd{background:var(--surface);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.cl{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1.2px;font-weight:500;margin-bottom:4px}
+.cvl{font-size:22px;font-weight:700;font-family:'Playfair Display',serif;letter-spacing:-.4px}
+.css2{font-size:10px;color:var(--mu);margin-top:2px}
+.sec{background:var(--surface);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:12px}
+.st{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.sp{flex:1}
+.rw{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)}.rw:last-child{border-bottom:none}
+.ri{font-size:15px;width:26px;text-align:center;flex-shrink:0}.rn{flex:1;font-size:12px}
+.rb2{width:70px;flex-shrink:0}.ra{font-size:12px;font-weight:600;text-align:right;min-width:80px;flex-shrink:0}
+.re{padding:3px 8px;border:1px solid var(--bd);border-radius:5px;font-size:10px;background:var(--s2);color:var(--mu);cursor:pointer;font-family:inherit;flex-shrink:0}.re:hover{border-color:var(--ac);color:var(--ac)}
+.bch{display:flex;align-items:flex-end;gap:4px;height:140px;padding:0 2px}
+.bgg{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bpr{display:flex;gap:2px;align-items:flex-end;height:115px;width:100%}
+.br{flex:1;border-radius:3px 3px 0 0;transition:height .4s;min-height:1px;cursor:pointer}.br:hover{opacity:.8}
+.bll{font-size:9px;color:var(--mu);text-align:center}
+.lg{display:flex;gap:14px;margin-top:8px;justify-content:center}
+.lgi{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--mu)}.ldd{width:7px;height:7px;border-radius:50%}
+.fab{position:fixed;bottom:20px;right:20px;width:48px;height:48px;background:linear-gradient(135deg,var(--ac),var(--a2));border:none;border-radius:50%;font-size:22px;color:var(--bg);cursor:pointer;box-shadow:0 5px 20px rgba(38,217,160,.3);display:flex;align-items:center;justify-content:center;z-index:100;transition:transform .2s}.fab:hover{transform:scale(1.08)}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;display:none;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(3px)}.mo.open{display:flex}
+.mc{background:var(--surface);border:1px solid var(--bd);border-radius:14px;padding:20px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto}
+.mc::-webkit-scrollbar{width:4px}.mc::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.mc h3{font-size:15px;font-weight:600;margin-bottom:14px}
+.mc label{display:block;font-size:11px;color:var(--mu);margin-bottom:3px;margin-top:10px}
+.mc input,.mc select{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s}
+.mc input:focus,.mc select:focus{border-color:var(--ac)}
+.ma{display:flex;gap:6px;margin-top:16px}
+.b1{padding:8px 16px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--ac);color:var(--bg)}.b1:hover{opacity:.9}
+.b2{padding:8px 16px;border:1px solid var(--bd);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:none;color:var(--mu)}.b2:hover{border-color:var(--tx);color:var(--tx)}
+.b3{padding:3px 8px;border:1px solid var(--dn);border-radius:5px;font-size:10px;cursor:pointer;font-family:inherit;background:none;color:var(--dn)}.b3:hover{background:var(--dn);color:var(--bg)}
+.tg{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.stl{width:100%;border-collapse:collapse;font-size:11px}
+.stl th{text-align:left;padding:5px 6px;color:var(--mu);font-weight:500;border-bottom:1px solid var(--bd);font-size:10px;text-transform:uppercase;letter-spacing:.8px}
+.stl td{padding:5px 6px;border-bottom:1px solid var(--bd)}.stl tr:last-child td{border-bottom:none}
+.stl .tr{font-weight:700}.stl .tr td{border-top:2px solid var(--bd);padding-top:8px}
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}
+.po{padding:10px 8px;border-radius:8px;cursor:pointer;border:2px solid transparent;text-align:center;transition:all .15s}.po:hover,.po.act{border-color:var(--ac)}
+.pd{display:flex;gap:3px;justify-content:center;margin-bottom:4px}.pd span{width:12px;height:12px;border-radius:50%;display:inline-block}
+.pl{font-size:10px;color:var(--mu)}
+.cr{display:flex;align-items:center;gap:8px;margin:5px 0}.cr label{margin:0;min-width:60px;font-size:11px;color:var(--mu)}.cr input[type=color]{width:32px;height:24px;border:1px solid var(--bd);border-radius:4px;padding:0;cursor:pointer;background:none}
+.gc{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd)}.gc:last-child{border-bottom:none}
+.qc{background:var(--surface);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center}
+.ql{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.qv{font-size:18px;font-weight:700;font-family:'Playfair Display',serif}
+.minibar{width:100%;height:6px;background:var(--s3);border-radius:3px;overflow:hidden}.minibar-fill{height:100%;border-radius:3px;transition:width .4s}
+.empty-msg{text-align:center;color:var(--mu);padding:24px;font-size:12px}
+.flex-row{display:flex;gap:6px}.flex-row>*{flex:1}
+.sync-badge{font-size:9px;padding:3px 8px;border-radius:10px;font-weight:600;letter-spacing:.5px;display:inline-flex;align-items:center;gap:4px}
+.sync-ok{background:#26d9a018;color:var(--ac)}.sync-err{background:#ff5c5c18;color:var(--dn)}.sync-ing{background:#4da6ff18;color:var(--a2)}
+.setup-box{background:var(--surface);border:1px solid var(--bd);border-radius:14px;padding:28px;max-width:520px;margin:60px auto}
+.setup-box h2{font-family:'Playfair Display',serif;font-size:24px;margin-bottom:8px}
+.setup-box p{font-size:13px;color:var(--mu);line-height:1.6;margin-bottom:16px}
+.setup-box code{background:var(--s2);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--ac)}
+.setup-box pre{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:14px;font-size:11px;overflow-x:auto;margin:12px 0;line-height:1.5;color:var(--tx);white-space:pre-wrap;word-break:break-all}
+.setup-box .step{display:flex;gap:10px;margin:12px 0;align-items:flex-start}
+.setup-box .step-num{width:24px;height:24px;border-radius:50%;background:var(--ac);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.setup-box .step-text{font-size:12px;line-height:1.6;flex:1}
+.setup-box input{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:14px;font-family:inherit;outline:none;margin:8px 0}
+.setup-box input:focus{border-color:var(--ac)}
+.copy-btn{padding:4px 10px;border:1px solid var(--bd);border-radius:5px;font-size:10px;background:var(--s2);color:var(--mu);cursor:pointer;font-family:inherit;position:absolute;top:8px;right:8px}.copy-btn:hover{border-color:var(--ac);color:var(--ac)}
+.pre-wrap{position:relative}
+@media(max-width:600px){.cds{grid-template-columns:1fr 1fr}.cvl{font-size:17px}.rb2{display:none}.pg{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="mo" id="modal-overlay"><div class="mc" id="modal-content"></div></div>
+<button class="fab" id="fab" title="Add Entry">+</button>
+<input type="file" id="logo-input" accept="image/*" style="display:none">
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// GOOGLE APPS SCRIPT CODE (to be deployed by user)
+// This is shown in the setup screen for copy-paste
+// ═══════════════════════════════════════════════════════════════
+const APPS_SCRIPT_CODE = `function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("AppData");
+  if (!sheet) {
+    sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet("AppData");
+    sheet.getRange("A1").setValue("{}");
+  }
+  var data = sheet.getRange("A1").getValue();
+  return ContentService.createTextOutput(data).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var input = JSON.parse(e.postData.contents);
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("AppData");
+    if (!sheet) {
+      sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet("AppData");
+    }
+    sheet.getRange("A1").setValue(JSON.stringify(input));
+    
+    // Also log entries to a separate sheet for spreadsheet viewing
+    if (input._lastAction) {
+      var logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Log");
+      if (!logSheet) {
+        logSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet("Log");
+        logSheet.getRange("A1:F1").setValues([["Timestamp","Type","Category","Description","Amount","Month/Year"]]);
+      }
+      var a = input._lastAction;
+      logSheet.appendRow([new Date(), a.type, a.category, a.description, a.amount, a.period]);
+      delete input._lastAction;
+      sheet.getRange("A1").setValue(JSON.stringify(input));
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({status:"ok"})).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status:"error",message:err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+// ═══ DATA ═══
+const MF=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const QS=[["Jan","Feb","Mar"],["Apr","May","Jun"],["Jul","Aug","Sep"],["Oct","Nov","Dec"]];
+const DEF_INC=[{id:"doc_kristine",name:"Doc Kristine Income",icon:"👩‍⚕️"},{id:"assoc_income",name:"Associate Income",icon:"👨‍⚕️"},{id:"other_income",name:"Other Income",icon:"💰"}];
+const DEF_EXP=[{id:"payroll",name:"Payroll",icon:"👥"},{id:"benefits",name:"Benefits",icon:"🎁"},{id:"meals",name:"Meals",icon:"🍽️"},{id:"rent",name:"Rent / Assoc Dues",icon:"🏢"},{id:"utilities",name:"Utilities",icon:"💡"},{id:"bir_dues",name:"BIR / Gov't Dues",icon:"🏛️"},{id:"new_equip",name:"New Equipment",icon:"🔧"},{id:"lab",name:"Laboratory",icon:"🧪"},{id:"grocery",name:"Grocery",icon:"🛒"},{id:"office_supplies",name:"Office Supplies",icon:"📎"},{id:"dental_supplies",name:"Dental Supplies",icon:"🦷"},{id:"miscellaneous",name:"Miscellaneous",icon:"📦"},{id:"savings",name:"Savings",icon:"🏦"},{id:"kdc_prof_fees",name:"KDC Prof Fees",icon:"💼"},{id:"marketing",name:"Marketing / Social Media",icon:"📣"},{id:"subscriptions",name:"Subscriptions",icon:"🔄"},{id:"tithes",name:"Tithes / CCF",icon:"⛪"},{id:"continuing_ed",name:"Continuing Education",icon:"📚"}];
+const DEF_PAL={bg:"#0b1015",surface:"#111920",surface2:"#182028",surface3:"#1f2a34",border:"#253040",text:"#e4e9f0",muted:"#6b7d93",accent:"#26d9a0",accent2:"#4da6ff",danger:"#ff5c5c",warning:"#f0b429"};
+const PRESETS=[
+  {name:"Midnight Teal",c:{...DEF_PAL}},
+  {name:"Warm Ember",c:{bg:"#12100e",surface:"#1c1814",surface2:"#241f1a",surface3:"#2e2720",border:"#3d3328",text:"#f0e6d8",muted:"#9a8872",accent:"#e8a44a",accent2:"#d46b3c",danger:"#c9453a",warning:"#e8c94a"}},
+  {name:"Ocean Blue",c:{bg:"#0a0f1a",surface:"#101828",surface2:"#162035",surface3:"#1c2a42",border:"#253a5a",text:"#e0e8f5",muted:"#6a82a6",accent:"#3b9cf5",accent2:"#7c5cf5",danger:"#f56565",warning:"#f5b83b"}},
+  {name:"Forest",c:{bg:"#0a100c",surface:"#111c14",surface2:"#18251a",surface3:"#1f2e22",border:"#2a3f2e",text:"#dce8df",muted:"#6e8a73",accent:"#4aba6e",accent2:"#2b9e7e",danger:"#e05c5c",warning:"#d4a843"}},
+  {name:"Clean Light",c:{bg:"#f5f6f8",surface:"#ffffff",surface2:"#f0f1f4",surface3:"#e6e8ec",border:"#d4d7de",text:"#1a1e2c",muted:"#6b7285",accent:"#1a8a6e",accent2:"#3366cc",danger:"#d04040",warning:"#c49020"}},
+  {name:"Rose Gold",c:{bg:"#110d0f",surface:"#1a1416",surface2:"#231b1e",surface3:"#2e2326",border:"#3f3034",text:"#f0e4e6",muted:"#9a7f84",accent:"#e0707a",accent2:"#c9a050",danger:"#d04a4a",warning:"#d4b050"}}
+];
+const SK="kdental-pro-v5";
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const fmt=n=>(!n||n===0)?"—":"₱"+Math.abs(n).toLocaleString("en-PH",{maximumFractionDigits:0});
+const fmtS=n=>(!n||n===0)?"₱0":(n<0?"-":"+")+fmt(n);
+const pct=(a,b)=>b>0?Math.round((a/b)*100):0;
+const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+
+function mkDefault(){return{company:{name:"KDental",subtitle:"Dental Clinic",logoDataUrl:null,chairs:3,workingDaysPerMonth:22,fixedCosts:0},palette:JSON.parse(JSON.stringify(DEF_PAL)),incomeCats:DEF_INC.map(c=>({...c})),expenseCats:DEF_EXP.map(c=>({...c})),recurring:[],goals:{monthlyIncome:0,monthlyExpenseLimit:0,savingsTarget:0,emergencyFundPct:8},budgetPct:{},years:{}}}
+function ensureYr(d,yr){if(!d.years[yr]){d.years[yr]={income:{},expenses:{},entries:{},budget:{incomePlan:{},expensePlan:{}}};MS.forEach(m=>{d.years[yr].income[m]={};d.years[yr].expenses[m]={};d.years[yr].entries[m]=[];d.years[yr].budget.incomePlan[m]={};d.years[yr].budget.expensePlan[m]={}})}if(!d.years[yr].budget){d.years[yr].budget={incomePlan:{},expensePlan:{}};MS.forEach(m=>{d.years[yr].budget.incomePlan[m]={};d.years[yr].budget.expensePlan[m]={}})}if(!d.budgetPct)d.budgetPct={}}
+// ═══ CLOUD SYNC ═══
+let SCRIPT_URL = localStorage.getItem("kdental_script_url") || "";
+let syncStatus = SCRIPT_URL ? "ready" : "none"; // none, syncing, ok, error
+let lastSync = null;
+
+async function cloudLoad() {
+  if (!SCRIPT_URL) return null;
+  syncStatus = "syncing"; renderSyncBadge();
+  try {
+    const r = await fetch(SCRIPT_URL);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    if (data && Object.keys(data).length > 0 && data.company) {
+      syncStatus = "ok"; lastSync = new Date();
+      return data;
+    }
+    syncStatus = "ok"; lastSync = new Date();
+    return null;
+  } catch (e) {
+    console.error("Cloud load error:", e);
+    syncStatus = "error";
+    return null;
+  }
+}
+
+let _syncTimer = null;
+let _pendingSync = false;
+
+async function _doCloudSave(data, lastAction) {
+  if (!SCRIPT_URL) return;
+  syncStatus = "syncing"; renderSyncBadge();
+  try {
+    const payload = JSON.parse(JSON.stringify(data));
+    if (lastAction) payload._lastAction = lastAction;
+    const r = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      redirect: "follow"
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    syncStatus = "ok"; lastSync = new Date();
+    _pendingSync = false;
+  } catch (e) {
+    console.error("Cloud save error:", e);
+    syncStatus = "error";
+    _pendingSync = true;
+  }
+  renderSyncBadge();
+}
+
+function cloudSave(data, lastAction) {
+  if (!SCRIPT_URL) return;
+  _pendingSync = true;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => _doCloudSave(data, lastAction), 2000);
+}
+
+async function doPushToCloud() {
+  if (!SCRIPT_URL) { alert("Not connected to Google Sheets. Go to Settings → Reconfigure."); return; }
+  clearTimeout(_syncTimer);
+  await _doCloudSave(D);
+  if (syncStatus === "ok") alert("Data pushed to Google Sheets successfully!");
+  else alert("Push failed. Check your internet connection and try again.");
+}
+
+function renderSyncBadge() {
+  const el = document.getElementById("sync-badge");
+  if (!el) return;
+  if (syncStatus === "ok") el.innerHTML = `<span class="sync-badge sync-ok">☁️ Synced${lastSync ? " " + lastSync.toLocaleTimeString() : ""}</span>`;
+  else if (syncStatus === "syncing") el.innerHTML = `<span class="sync-badge sync-ing">⏳ Syncing...</span>`;
+  else if (syncStatus === "error") el.innerHTML = `<span class="sync-badge sync-err">⚠️ Sync Error</span>`;
+  else if (syncStatus === "none") el.innerHTML = `<span class="sync-badge" style="background:var(--s3);color:var(--mu)">💾 Local Only</span>`;
+  else el.innerHTML = `<span class="sync-badge sync-ok">☁️ Connected</span>`;
+}
+
+// ═══ STATE ═══
+let D = mkDefault();
+let view = "dashboard", year = new Date().getFullYear(), month = MS[new Date().getMonth()];
+let showSetup = false;
+
+function loadLocal() { try { const s = localStorage.getItem(SK); if (s) { const p = JSON.parse(s); const m = mkDefault(); Object.keys(m).forEach(k => { if (p[k] !== undefined) m[k] = p[k] }); D = m } } catch {} }
+function saveLocal() { try { localStorage.setItem(SK, JSON.stringify(D)) } catch {} }
+
+function upd(fn, lastAction) {
+  fn(D);
+  saveLocal();
+  cloudSave(D, lastAction);
+  render();
+}
+
+// ═══ HELPERS ═══
+function getYd(){return D.years[year]||{income:{},expenses:{},entries:{}}}
+function getStats(){const yd=getYd(),r={};const iC=D.incomeCats,eC=D.expenseCats;MS.forEach(m=>{const inc=iC.reduce((s,c)=>s+(yd.income?.[m]?.[c.id]||0),0);const exp=eC.reduce((s,c)=>s+(yd.expenses?.[m]?.[c.id]||0),0);r[m]={income:inc,expenses:exp,net:inc-exp}});return r}
+function getYtd(stats){return MS.reduce((a,m)=>({income:a.income+stats[m].income,expenses:a.expenses+stats[m].expenses,net:a.net+stats[m].net}),{income:0,expenses:0,net:0})}
+function getQs(stats){return QS.map((q,i)=>{const s=q.reduce((a,m)=>({income:a.income+stats[m].income,expenses:a.expenses+stats[m].expenses,net:a.net+stats[m].net}),{income:0,expenses:0,net:0});return{...s,label:`Q${i+1}`}})}
+function minibar(val,max,color){const p=max>0?Math.min((val/max)*100,100):0;return`<div class="minibar"><div class="minibar-fill" style="width:${p}%;background:${color}"></div></div>`}
+function spark(values,color,w=140,h=38){if(!values||values.length<2)return"";const mx=Math.max(...values,1),mn=Math.min(...values,0),r=mx-mn||1;const pts=values.map((v,i)=>`${(i/(values.length-1))*w},${h-4-((v-mn)/r)*(h-8)}`);const gid="g"+color.replace(/\W/g,"");return`<svg width="${w}" height="${h}" style="display:block"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity=".2"/><stop offset="100%" stop-color="${color}" stop-opacity=".01"/></linearGradient></defs><path d="M0,${h} L${pts.join(" L")} L${w},${h}Z" fill="url(#${gid})"/><polyline fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${pts.join(" ")}"/>${values.map((v,i)=>{const x=(i/(values.length-1))*w,y=h-4-((v-mn)/r)*(h-8);return`<circle cx="${x}" cy="${y}" r="2" fill="${color}"/>`}).join("")}</svg>`}
+function ring(p,color,size,label){const r2=size/2-4,c=2*Math.PI*r2,d=c-(Math.min(p,100)/100)*c;return`<div style="text-align:center"><svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${r2}" fill="none" stroke="var(--s3)" stroke-width="3.5"/><circle cx="${size/2}" cy="${size/2}" r="${r2}" fill="none" stroke="${color}" stroke-width="3.5" stroke-dasharray="${c}" stroke-dashoffset="${d}" stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})" style="transition:stroke-dashoffset .5s"/><text x="${size/2}" y="${size/2+1}" text-anchor="middle" dominant-baseline="middle" fill="var(--tx)" font-size="11" font-weight="700">${Math.min(p,100)}%</text></svg><div style="font-size:9px;color:var(--mu);margin-top:1px">${esc(label)}</div></div>`}
+
+// ═══ MODAL ═══
+function openModal(html){document.getElementById("modal-content").innerHTML=html;document.getElementById("modal-overlay").classList.add("open")}
+function closeModal(){document.getElementById("modal-overlay").classList.remove("open")}
+
+// ═══ PALETTE ═══
+function applyPalette(){const p=D.palette;const r=document.documentElement.style;r.setProperty("--bg",p.bg);r.setProperty("--surface",p.surface);r.setProperty("--s2",p.surface2);r.setProperty("--s3",p.surface3);r.setProperty("--bd",p.border);r.setProperty("--tx",p.text);r.setProperty("--mu",p.muted);r.setProperty("--ac",p.accent);r.setProperty("--a2",p.accent2);r.setProperty("--dn",p.danger);r.setProperty("--wn",p.warning);r.setProperty("--ag",p.accent+"22");r.setProperty("--dg",p.danger+"1a")}
+
+// ═══ SETUP SCREEN ═══
+function renderSetup() {
+  document.getElementById("fab").style.display = "none";
+  document.getElementById("app").innerHTML = `
+  <div class="setup-box">
+    <div style="text-align:center;margin-bottom:20px"><div class="lb" style="margin:0 auto;width:56px;height:56px;font-size:28px;border-radius:14px">🦷</div></div>
+    <h2 style="text-align:center">Connect to Google Sheets</h2>
+    <p style="text-align:center">Follow these steps to sync your KDental data to a Google Sheet so it works across all your devices.</p>
+
+    <div class="step"><div class="step-num">1</div><div class="step-text">Create a new <strong>Google Sheet</strong> (or use an existing one). Name it something like "KDental Budget".</div></div>
+
+    <div class="step"><div class="step-num">2</div><div class="step-text">In the Google Sheet, go to <strong>Extensions → Apps Script</strong>. Delete any existing code and paste the code below:</div></div>
+
+    <div class="pre-wrap"><pre id="script-code">${esc(APPS_SCRIPT_CODE)}</pre><button class="copy-btn" onclick="navigator.clipboard.writeText(APPS_SCRIPT_CODE);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)">Copy</button></div>
+
+    <div class="step"><div class="step-num">3</div><div class="step-text">Click <strong>Deploy → New deployment</strong>. Choose <strong>"Web app"</strong>. Set:<br>• Execute as: <strong>Me</strong><br>• Who has access: <strong>Anyone</strong><br>Click <strong>Deploy</strong> and authorize when prompted.</div></div>
+
+    <div class="step"><div class="step-num">4</div><div class="step-text">Copy the <strong>Web app URL</strong> (starts with <code>https://script.google.com/macros/s/...</code>) and paste it below:</div></div>
+
+    <input id="setup-url" placeholder="Paste your Apps Script Web App URL here..." value="${esc(SCRIPT_URL)}">
+
+    <div class="ma" style="justify-content:center">
+      <button class="b1" onclick="doConnect()" style="padding:10px 28px;font-size:13px">Connect & Sync</button>
+      <button class="b2" onclick="doSkipSetup()">Use Offline Only</button>
+    </div>
+    ${SCRIPT_URL ? `<div style="text-align:center;margin-top:12px"><button class="b2" style="font-size:11px" onclick="doDisconnect()">Disconnect Google Sheets</button></div>` : ""}
+  </div>`;
+}
+
+async function doConnect() {
+  const url = document.getElementById("setup-url").value.trim();
+  if (!url || !url.startsWith("https://script.google.com/")) {
+    alert("Please paste a valid Google Apps Script Web App URL.");
+    return;
+  }
+  SCRIPT_URL = url;
+  localStorage.setItem("kdental_script_url", SCRIPT_URL);
+  syncStatus = "syncing";
+
+  // Try to load existing data from the sheet
+  const cloudData = await cloudLoad();
+  if (cloudData && cloudData.company) {
+    // Cloud has data — ask if they want to use it or overwrite
+    if (confirm("Found existing data in Google Sheet. Use cloud data? (OK = use cloud, Cancel = overwrite with local)")) {
+      const m = mkDefault();
+      Object.keys(m).forEach(k => { if (cloudData[k] !== undefined) m[k] = cloudData[k] });
+      D = m;
+      saveLocal();
+    } else {
+      await cloudSave(D);
+    }
+  } else {
+    // No data in cloud — push local data up
+    await cloudSave(D);
+  }
+
+  showSetup = false;
+  render();
+}
+
+function doSkipSetup() { showSetup = false; render(); }
+function doDisconnect() { SCRIPT_URL = ""; localStorage.removeItem("kdental_script_url"); syncStatus = "none"; showSetup = false; render(); }
+
+// ═══ RENDER (same as offline version + sync badge) ═══
+function render(){
+  if (showSetup) { renderSetup(); return; }
+  applyPalette();
+  ensureYr(D,year);
+  document.getElementById("fab").style.display = "flex";
+  const yd=getYd(),stats=getStats(),ytd2=getYtd(stats),cs=stats[month],pal=D.palette,co=D.company,goals=D.goals,iCats=D.incomeCats,eCats=D.expenseCats,recs=D.recurring;
+  const maxM=Math.max(...MS.map(m=>Math.max(stats[m].income,stats[m].expenses,1)));
+  let h="";
+
+  // Header
+  h+=`<div class="hdr"><div class="lb" onclick="setView('settings')">${co.logoDataUrl?`<img src="${co.logoDataUrl}">`:"🦷"}</div><div style="flex:1"><div class="cn">${esc(co.name||"KDental")}</div><div class="csb">${esc(co.subtitle||"Dental Clinic")} <span id="sync-badge"></span></div></div><button class="re" style="font-size:11px;padding:5px 12px" onclick="setView('settings')">⚙️</button></div>`;
+
+  // Nav
+  const navItems=[["dashboard","📊"],["budget","📋"],["entries","📝"],["recurring","🔄"],["goals","🎯"],["reports","📈"],["settings","⚙️"]];
+  h+=`<div class="nv">${navItems.map(([v,ic])=>`<button class="${view===v?"a":""}" onclick="setView('${v}')">${ic} ${v[0].toUpperCase()+v.slice(1)}</button>`).join("")}</div>`;
+
+  // Year + Month
+  h+=`<div class="tb"><select class="ys" onchange="setYear(+this.value)">${Array.from({length:10},(_,i)=>2024+i).map(y=>`<option value="${y}"${y===year?" selected":""}>${y}</option>`).join("")}</select><div class="mbr">${MS.map(m=>`<button class="mb ${month===m?"a":""}" onclick="setMonth('${m}')">${m}</button>`).join("")}</div></div>`;
+
+  // ═══ DASHBOARD ═══
+  if(view==="dashboard"){
+    h+=`<div class="cds"><div class="cd"><div class="cl">Gross Income</div><div class="cvl" style="color:var(--ac)">${fmt(cs.income)}</div><div class="css2">YTD: ${fmt(ytd2.income)}</div></div><div class="cd"><div class="cl">Total Expenses</div><div class="cvl" style="color:var(--dn)">${fmt(cs.expenses)}</div><div class="css2">YTD: ${fmt(ytd2.expenses)}</div></div><div class="cd"><div class="cl">Net Profit</div><div class="cvl" style="color:${cs.net>=0?"var(--ac)":"var(--dn)"}">${cs.net?fmtS(cs.net):"—"}</div><div class="css2">YTD: ${fmtS(ytd2.net)}</div></div>${goals.emergencyFundPct>0?`<div class="cd"><div class="cl">${goals.emergencyFundPct}% Fund</div><div class="cvl" style="color:var(--wn)">${fmt(cs.income*(goals.emergencyFundPct/100))}</div><div class="css2">Emergency fund target</div></div>`:""}</div>`;
+    if(goals.monthlyIncome>0||goals.monthlyExpenseLimit>0||goals.savingsTarget>0){h+=`<div class="sec"><div class="st">🎯 Goal Progress — ${MF[MS.indexOf(month)]}</div><div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:12px">${goals.monthlyIncome>0?ring(pct(cs.income,goals.monthlyIncome),"var(--ac)",56,"Income"):""}${goals.monthlyExpenseLimit>0?ring(pct(cs.expenses,goals.monthlyExpenseLimit),cs.expenses>goals.monthlyExpenseLimit?"var(--dn)":"var(--a2)",56,"Expenses"):""}${goals.savingsTarget>0?ring(pct(yd.expenses?.[month]?.savings||0,goals.savingsTarget),"var(--wn)",56,"Savings"):""}</div></div>`}
+    h+=`<div class="sec"><div class="st">Monthly Overview — ${year}</div><div class="bch">${MS.map(m=>{const s=stats[m];return`<div class="bgg"><div class="bpr"><div class="br" style="height:${maxM>0?(s.income/maxM)*115:0}px;background:var(--ac);opacity:${month===m?1:.35}"></div><div class="br" style="height:${maxM>0?(s.expenses/maxM)*115:0}px;background:var(--dn);opacity:${month===m?1:.35}"></div></div><div class="bll" style="font-weight:${month===m?700:400};color:${month===m?"var(--tx)":"var(--mu)"}">${m}</div></div>`}).join("")}</div><div class="lg"><div class="lgi"><div class="ldd" style="background:var(--ac)"></div>Income</div><div class="lgi"><div class="ldd" style="background:var(--dn)"></div>Expenses</div></div></div>`;
+    const topExp=eCats.filter(c=>(yd.expenses?.[month]?.[c.id]||0)>0).sort((a,b)=>(yd.expenses?.[month]?.[b.id]||0)-(yd.expenses?.[month]?.[a.id]||0)).slice(0,8);
+    h+=`<div class="sec"><div class="st">Top Expenses — ${MF[MS.indexOf(month)]}</div>${topExp.length?topExp.map(c=>{const v=yd.expenses[month][c.id]||0;return`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}</span><div class="rb2">${minibar(v,cs.expenses,"var(--dn)")}</div><span class="ra">${fmt(v)}</span></div>`}).join(""):`<div class="empty-msg">No expenses yet. Tap + to add.</div>`}</div>`;
+    h+=`<div class="cds" style="grid-template-columns:1fr 1fr"><div class="cd"><div class="cl">Income Trend</div>${spark(MS.map(m=>stats[m].income),pal.accent)}</div><div class="cd"><div class="cl">Expense Trend</div>${spark(MS.map(m=>stats[m].expenses),pal.danger)}</div></div>`;
+  }
+
+  // ═══ BUDGET (Plan vs Actual) ═══
+  if(view==="budget"){
+    const bp=yd.budget||{incomePlan:{},expensePlan:{}};const bpI=bp.incomePlan?.[month]||{};const bpE=bp.expensePlan?.[month]||{};const bPct=D.budgetPct||{};
+    // Income plan
+    h+=`<div class="sec"><div class="st" style="color:var(--ac)">💰 Income Plan vs Actual — ${MF[MS.indexOf(month)]} ${year}<span class="sp"></span><button class="re" onclick="modalAddCat('income')">+ Source</button></div>`;
+    h+=`<div class="rw" style="font-size:10px;color:var(--mu);font-weight:600;border-bottom:1px solid var(--bd);padding-bottom:4px"><span class="ri"></span><span class="rn">Category</span><span class="ra" style="min-width:70px">Budget</span><span class="ra" style="min-width:70px">Actual</span><span class="ra" style="min-width:50px">Var</span><span style="width:32px"></span></div>`;
+    let totalBudgetI=0,totalActualI=0;
+    iCats.forEach(c=>{const planned=bpI[c.id]||0;const actual=yd.income?.[month]?.[c.id]||0;const variance=actual-planned;totalBudgetI+=planned;totalActualI+=actual;const varColor=variance>=0?"var(--ac)":"var(--dn)";h+=`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}</span><span class="ra" style="min-width:70px;color:var(--mu)">${fmt(planned)}</span><span class="ra" style="min-width:70px;color:${actual>0?"var(--ac)":"var(--mu)"}">${fmt(actual)}</span><span class="ra" style="min-width:50px;color:${varColor};font-size:10px">${planned?((variance>=0?"+":"")+pct(variance,planned)+"%"):"—"}</span><button class="re" onclick="modalEditBudget('incomePlan','${c.id}','${esc(c.name)}',${planned})">✎</button></div>`});
+    const varI=totalActualI-totalBudgetI;
+    h+=`<div class="rw" style="font-weight:700;border-top:2px solid var(--bd);padding-top:10px"><span class="ri">Σ</span><span class="rn">Gross Income</span><span class="ra" style="min-width:70px;color:var(--mu)">${fmt(totalBudgetI)}</span><span class="ra" style="min-width:70px;color:var(--ac)">${fmt(totalActualI)}</span><span class="ra" style="min-width:50px;color:${varI>=0?"var(--ac)":"var(--dn)"};font-size:10px">${totalBudgetI?((varI>=0?"+":"")+pct(varI,totalBudgetI)+"%"):"—"}</span><span style="width:32px"></span></div></div>`;
+
+    // Expense plan
+    h+=`<div class="sec"><div class="st" style="color:var(--dn)">📉 Expense Budget vs Actual — ${MF[MS.indexOf(month)]} ${year}<span class="sp"></span><button class="re" onclick="modalAddCat('expense')">+ Category</button></div>`;
+    h+=`<div class="rw" style="font-size:10px;color:var(--mu);font-weight:600;border-bottom:1px solid var(--bd);padding-bottom:4px"><span class="ri"></span><span class="rn">Category</span><span class="ra" style="min-width:70px">Budget</span><span class="ra" style="min-width:70px">Actual</span><span class="ra" style="min-width:50px">Var</span><span style="width:32px"></span></div>`;
+    let totalBudgetE=0,totalActualE=0;
+    eCats.forEach(c=>{
+      const pctBudget=bPct[c.id]||0;
+      let planned=bpE[c.id]||0;
+      if(pctBudget>0&&cs.income>0) planned=Math.round(cs.income*(pctBudget/100));
+      const actual=yd.expenses?.[month]?.[c.id]||0;const variance=actual-planned;totalBudgetE+=planned;totalActualE+=actual;
+      const overBudget=planned>0&&actual>planned;const varColor=planned===0?"var(--mu)":overBudget?"var(--dn)":"var(--ac)";
+      const pctLabel=pctBudget>0?` (${pctBudget}%)`:"";
+      h+=`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}<span style="font-size:9px;color:var(--a2)">${pctLabel}</span></span><span class="ra" style="min-width:70px;color:var(--mu)">${fmt(planned)}</span><span class="ra" style="min-width:70px;color:${overBudget?"var(--dn)":"var(--tx)"}">${fmt(actual)}${overBudget?" ⚠️":""}</span><span class="ra" style="min-width:50px;color:${varColor};font-size:10px">${planned?((variance<=0?"":"+")+(pct(variance,planned))+"%"):"—"}</span><button class="re" onclick="modalEditBudget('expensePlan','${c.id}','${esc(c.name)}',${bpE[c.id]||0},${pctBudget})">✎</button></div>`});
+    const varE=totalActualE-totalBudgetE;const overTotal=totalBudgetE>0&&totalActualE>totalBudgetE;
+    h+=`<div class="rw" style="font-weight:700;border-top:2px solid var(--bd);padding-top:10px"><span class="ri">Σ</span><span class="rn">Total Expenses</span><span class="ra" style="min-width:70px;color:var(--mu)">${fmt(totalBudgetE)}</span><span class="ra" style="min-width:70px;color:${overTotal?"var(--dn)":"var(--tx)"}">${fmt(totalActualE)}${overTotal?" ⚠️":""}</span><span class="ra" style="min-width:50px;color:${overTotal?"var(--dn)":"var(--ac)"};font-size:10px">${totalBudgetE?((varE<=0?"":"+")+(pct(varE,totalBudgetE))+"%"):"—"}</span><span style="width:32px"></span></div></div>`;
+
+    // Net summary
+    const netBudget=totalBudgetI-totalBudgetE;const netActual=totalActualI-totalActualE;
+    h+=`<div class="cds" style="grid-template-columns:1fr 1fr 1fr"><div class="cd"><div class="cl">Budgeted Net</div><div class="cvl" style="color:${netBudget>=0?"var(--ac)":"var(--dn)"};font-size:18px">${fmtS(netBudget)}</div></div><div class="cd"><div class="cl">Actual Net</div><div class="cvl" style="color:${netActual>=0?"var(--ac)":"var(--dn)"};font-size:18px">${fmtS(netActual)}</div></div><div class="cd"><div class="cl">Variance</div><div class="cvl" style="color:${netActual>=netBudget?"var(--ac)":"var(--dn)"};font-size:18px">${fmtS(netActual-netBudget)}</div></div></div>`;
+  }
+
+  // ═══ ENTRIES ═══
+  if(view==="entries"){const entries=(yd.entries?.[month]||[]).slice().sort((a,b)=>(b.ts||0)-(a.ts||0));h+=`<div class="sec"><div class="st">📝 Entries — ${MF[MS.indexOf(month)]} ${year}</div>${!entries.length?`<div class="empty-msg">No entries yet. Tap + to add.</div>`:entries.map(e=>{const cat=[...iCats,...eCats].find(c=>c.id===e.category);return`<div class="rw"><span class="ri">${cat?.icon||"📄"}</span><div style="flex:1"><div style="font-size:12px">${esc(e.description||cat?.name||"")}</div><div style="font-size:10px;color:var(--mu)">${esc(cat?.name||"")} · ${e.type==="income"?"Income":"Expense"}${e.recurringId?" · 🔄":""}</div></div><span class="ra" style="color:${e.type==="income"?"var(--ac)":"var(--dn)"}">${e.type==="income"?"+":"-"}${fmt(e.amount)}</span><button class="b3" onclick="doDelEntry('${month}','${e.id}')">✕</button></div>`}).join("")}</div>`}
+
+  // ═══ RECURRING ═══
+  if(view==="recurring"){h+=`<div class="sec"><div class="st">🔄 Recurring Items<span class="sp"></span><button class="re" onclick="modalAddRec()">+ Add</button></div>${!recs.length?`<div class="empty-msg">No recurring items yet.</div>`:recs.map(r=>{const cat=[...iCats,...eCats].find(c=>c.id===r.category);return`<div class="rw" style="flex-wrap:wrap"><span class="ri">${cat?.icon||"📄"}</span><div style="flex:1;min-width:120px"><div style="font-size:12px;font-weight:600">${esc(r.name)}</div><div style="font-size:10px;color:var(--mu)">${esc(cat?.name||"")} · ${fmt(r.amount)}/mo</div><div style="font-size:10px;color:var(--mu)">${MS[r.startMonth||0]} ${r.startYear||year} → ${!r.endYear||r.endYear===9999?"Ongoing":`${MS[r.endMonth||11]} ${r.endYear}`}</div></div><span class="tg" style="background:${r.active?"var(--ag)":"var(--s3)"};color:${r.active?"var(--ac)":"var(--mu)"}">${r.active?"Active":"Paused"}</span><button class="re" onclick="doTogRec('${r.id}')">${r.active?"⏸":"▶"}</button><button class="re" style="color:var(--a2)" onclick="doApplyRec('${r.id}')">Apply ${year}</button><button class="b3" onclick="doDelRec('${r.id}')">✕</button></div>`}).join("")}</div>`}
+
+  // ═══ GOALS ═══
+  if(view==="goals"){const items=[{f:"monthlyIncome",l:"Monthly Income Goal",cur:cs.income},{f:"monthlyExpenseLimit",l:"Monthly Expense Limit",cur:cs.expenses},{f:"savingsTarget",l:"Monthly Savings Target",cur:yd.expenses?.[month]?.savings||0},{f:"emergencyFundPct",l:"Emergency Fund %",cur:goals.emergencyFundPct||8}];h+=`<div class="sec"><div class="st">🎯 Financial Goals</div>${items.map(g=>`<div class="gc">${ring(g.f==="emergencyFundPct"?g.cur:(goals[g.f]>0?pct(g.cur,goals[g.f]):0),"var(--ac)",56,g.l.split(" ").pop())}<div style="flex:1"><div style="font-size:12px;font-weight:600">${g.l}</div><div style="font-size:11px;color:var(--mu)">Target: ${g.f==="emergencyFundPct"?`${goals[g.f]||8}%`:fmt(goals[g.f])} · Current: ${g.f==="emergencyFundPct"?`${g.cur}%`:fmt(g.cur)}</div></div><button class="re" onclick="modalEditGoal('${g.f}','${esc(g.l)}',${goals[g.f]||0})">Edit</button></div>`).join("")}</div>`}
+
+  // ═══ REPORTS ═══
+  if(view==="reports"){
+    const qs=getQs(stats);
+    // Find months with data for projections
+    const monthsWithData=MS.filter(m=>stats[m].income>0||stats[m].expenses>0);
+    const mCount=monthsWithData.length||1;
+    const avgIncome=ytd2.income/mCount;const avgExpenses=ytd2.expenses/mCount;const avgNet=ytd2.net/mCount;
+    const projIncome=avgIncome*12;const projExpenses=avgExpenses*12;const projNet=projIncome-projExpenses;
+    const profitMargin=ytd2.income>0?((ytd2.net/ytd2.income)*100).toFixed(1):0;
+    const projMargin=projIncome>0?((projNet/projIncome)*100).toFixed(1):0;
+    const opexRatio=ytd2.income>0?((ytd2.expenses/ytd2.income)*100).toFixed(1):0;
+
+    // Profit margin & key metrics
+    h+=`<div class="sec"><div class="st">📐 Key Financial Metrics — ${year}</div><div class="cds" style="margin-bottom:0">${[
+      {l:"Profit Margin",v:`${profitMargin}%`,c:profitMargin>=20?"var(--ac)":profitMargin>=10?"var(--wn)":"var(--dn)",s:"Net Income ÷ Revenue"},
+      {l:"OpEx Ratio",v:`${opexRatio}%`,c:opexRatio<=70?"var(--ac)":opexRatio<=85?"var(--wn)":"var(--dn)",s:"Expenses ÷ Revenue"},
+      {l:"Avg Monthly Net",v:fmtS(avgNet),c:avgNet>=0?"var(--ac)":"var(--dn)",s:`Based on ${mCount} month${mCount>1?"s":""}`},
+      {l:"Revenue/Month",v:fmt(avgIncome),c:"var(--ac)",s:"Average monthly income"}
+    ].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c};font-size:20px">${x.v}</div><div class="css2">${x.s}</div></div>`).join("")}</div></div>`;
+
+    // Annual projections
+    h+=`<div class="sec"><div class="st">🔮 Annual Projections — ${year}</div><p style="font-size:11px;color:var(--mu);margin-bottom:12px">Based on ${mCount}-month average, projected to full year:</p><div class="cds" style="margin-bottom:0">${[
+      {l:"Projected Income",v:fmt(projIncome),c:"var(--ac)",s:`${fmt(avgIncome)}/mo × 12`},
+      {l:"Projected Expenses",v:fmt(projExpenses),c:"var(--dn)",s:`${fmt(avgExpenses)}/mo × 12`},
+      {l:"Projected Net Profit",v:fmtS(projNet),c:projNet>=0?"var(--ac)":"var(--dn)",s:`Margin: ${projMargin}%`}
+    ].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c};font-size:18px">${x.v}</div><div class="css2">${x.s}</div></div>`).join("")}</div></div>`;
+
+    // Quarterly
+    h+=`<div class="sec"><div class="st">📊 Quarterly Report — ${year}</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">${qs.map((q,i)=>{const qMargin=q.income>0?((q.net/q.income)*100).toFixed(0):"0";return`<div class="qc"><div class="ql">${q.label} (${QS[i].join("–")})</div><div class="qv" style="color:var(--ac);font-size:16px">${fmt(q.income)}</div><div style="font-size:10px;color:var(--mu)">Income</div><div class="qv" style="color:var(--dn);font-size:14px;margin-top:4px">${fmt(q.expenses)}</div><div style="font-size:10px;color:var(--mu)">Expenses</div><div style="font-size:13px;font-weight:700;color:${q.net>=0?"var(--ac)":"var(--dn)"};margin-top:6px">${fmtS(q.net)}</div><div style="font-size:10px;color:var(--mu)">Margin: ${qMargin}%</div></div>`}).join("")}</div></div>`;
+
+    // Expense breakdown by % of income
+    h+=`<div class="sec"><div class="st">📊 Expense Breakdown (% of Income)</div>`;
+    if(ytd2.income>0){
+      const expSorted=eCats.map(c=>({...c,total:MS.reduce((s,m)=>s+(yd.expenses?.[m]?.[c.id]||0),0)})).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+      expSorted.forEach(c=>{const p2=((c.total/ytd2.income)*100).toFixed(1);h+=`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}</span><div class="rb2">${minibar(c.total,ytd2.income,"var(--dn)")}</div><span class="ra" style="min-width:60px">${p2}%</span><span class="ra">${fmt(c.total)}</span></div>`});
+    } else { h+=`<div class="empty-msg">No income data yet.</div>`; }
+    h+=`</div>`;
+
+    // Annual summary table
+    h+=`<div class="sec"><div class="st">📈 Annual Summary — ${year}</div><div style="overflow-x:auto"><table class="stl"><thead><tr><th>Category</th>${MS.map(m=>`<th style="text-align:right;cursor:pointer" onclick="setMonth('${m}')">${m}</th>`).join("")}<th style="text-align:right">Total</th></tr></thead><tbody>`;
+    h+=`<tr style="background:var(--ag)"><td style="font-weight:600;color:var(--ac)">Gross Income</td>${MS.map(m=>`<td style="text-align:right;color:var(--ac)">${fmt(stats[m].income)}</td>`).join("")}<td style="text-align:right;font-weight:700;color:var(--ac)">${fmt(ytd2.income)}</td></tr>`;
+    eCats.forEach(c=>{const t=MS.reduce((s,m)=>s+(yd.expenses?.[m]?.[c.id]||0),0);if(!t)return;h+=`<tr><td>${c.icon} ${esc(c.name)}</td>${MS.map(m=>`<td style="text-align:right">${fmt(yd.expenses?.[m]?.[c.id]||0)}</td>`).join("")}<td style="text-align:right;font-weight:600">${fmt(t)}</td></tr>`});
+    h+=`<tr style="background:var(--dg)" class="tr"><td style="color:var(--dn)">Total Expenses</td>${MS.map(m=>`<td style="text-align:right;color:var(--dn)">${fmt(stats[m].expenses)}</td>`).join("")}<td style="text-align:right;font-weight:700;color:var(--dn)">${fmt(ytd2.expenses)}</td></tr>`;
+    h+=`<tr class="tr"><td>Net Profit</td>${MS.map(m=>{const n=stats[m].net;return`<td style="text-align:right;font-weight:700;color:${n>=0?"var(--ac)":"var(--dn)"}">${n?fmtS(n):"—"}</td>`}).join("")}<td style="text-align:right;font-weight:700;color:${ytd2.net>=0?"var(--ac)":"var(--dn)"}">${fmtS(ytd2.net)}</td></tr>`;
+    h+=`<tr><td style="color:var(--mu)">Profit Margin</td>${MS.map(m=>{const margin=stats[m].income>0?((stats[m].net/stats[m].income)*100).toFixed(0)+"%":"—";const c2=stats[m].net>=0?"var(--ac)":"var(--dn)";return`<td style="text-align:right;color:${c2}">${margin}</td>`}).join("")}<td style="text-align:right;font-weight:700;color:${ytd2.net>=0?"var(--ac)":"var(--dn)"}">${profitMargin}%</td></tr>`;
+    h+=`</tbody></table></div></div>`;
+
+    // YTD cards
+    h+=`<div class="cds">${[{l:"Annual Income",v:ytd2.income,c:"var(--ac)",s:`Avg: ${fmt(avgIncome)}/mo`},{l:"Annual Expenses",v:ytd2.expenses,c:"var(--dn)",s:`Avg: ${fmt(avgExpenses)}/mo`},{l:"Annual Net",v:ytd2.net,c:ytd2.net>=0?"var(--ac)":"var(--dn)",s:`Margin: ${profitMargin}%`}].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c}">${x.l.includes("Net")?fmtS(x.v):fmt(x.v)}</div><div class="css2">${x.s}</div></div>`).join("")}</div>`;
+
+    // ═══ PROFIT & LOSS STATEMENT ═══
+    const grossMargin=ytd2.income>0?((ytd2.income-ytd2.expenses)/ytd2.income*100).toFixed(1):"0";
+    const netMargin=profitMargin;
+    h+=`<div class="sec"><div class="st">📋 Profit & Loss Statement — ${year}</div><div style="overflow-x:auto"><table class="stl"><tbody>`;
+    h+=`<tr style="background:var(--ag)"><td style="font-weight:700;color:var(--ac)">Gross Revenue</td><td style="text-align:right;font-weight:700;color:var(--ac)">${fmt(ytd2.income)}</td></tr>`;
+    iCats.forEach(c=>{const t=MS.reduce((s,m)=>s+(yd.income?.[m]?.[c.id]||0),0);if(!t)return;h+=`<tr><td style="padding-left:20px;color:var(--mu)">${c.icon} ${esc(c.name)}</td><td style="text-align:right">${fmt(t)}</td></tr>`});
+    h+=`<tr style="border-top:2px solid var(--bd)"><td style="font-weight:700;color:var(--dn)">Operating Expenses</td><td style="text-align:right;font-weight:700;color:var(--dn)">${fmt(ytd2.expenses)}</td></tr>`;
+    const expSorted2=eCats.map(c=>({...c,total:MS.reduce((s,m)=>s+(yd.expenses?.[m]?.[c.id]||0),0)})).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+    expSorted2.forEach(c=>{const pOfInc=ytd2.income>0?((c.total/ytd2.income)*100).toFixed(1):"0";h+=`<tr><td style="padding-left:20px;color:var(--mu)">${c.icon} ${esc(c.name)} <span style="font-size:9px;color:var(--a2)">${pOfInc}%</span></td><td style="text-align:right">${fmt(c.total)}</td></tr>`});
+    h+=`<tr style="border-top:3px double var(--bd);background:${ytd2.net>=0?"var(--ag)":"var(--dg)"}"><td style="font-weight:700;font-size:14px">Net Profit / (Loss)</td><td style="text-align:right;font-weight:700;font-size:14px;color:${ytd2.net>=0?"var(--ac)":"var(--dn)"}">${fmtS(ytd2.net)}</td></tr>`;
+    h+=`<tr><td style="color:var(--mu)">Gross Profit Margin</td><td style="text-align:right;font-weight:600">${grossMargin}%</td></tr>`;
+    h+=`<tr><td style="color:var(--mu)">Net Profit Margin</td><td style="text-align:right;font-weight:600;color:${netMargin>=15?"var(--ac)":netMargin>=5?"var(--wn)":"var(--dn)"}">${netMargin}%</td></tr>`;
+    h+=`<tr><td style="color:var(--mu)">OpEx Ratio</td><td style="text-align:right;font-weight:600">${opexRatio}%</td></tr>`;
+    h+=`</tbody></table></div></div>`;
+
+    // ═══ CASH FLOW REPORT ═══
+    let runningBalance=0;
+    h+=`<div class="sec"><div class="st">💰 Cash Flow Report — ${year}</div><div style="overflow-x:auto"><table class="stl"><thead><tr><th>Month</th><th style="text-align:right">Inflow</th><th style="text-align:right">Outflow</th><th style="text-align:right">Net Flow</th><th style="text-align:right">Running Balance</th></tr></thead><tbody>`;
+    MS.forEach(m=>{const s=stats[m];runningBalance+=s.net;const hasData=s.income>0||s.expenses>0;h+=`<tr${!hasData?" style=\"opacity:.4\"":""}><td>${m}</td><td style="text-align:right;color:var(--ac)">${fmt(s.income)}</td><td style="text-align:right;color:var(--dn)">${fmt(s.expenses)}</td><td style="text-align:right;color:${s.net>=0?"var(--ac)":"var(--dn)"}; font-weight:600">${s.net?fmtS(s.net):"—"}</td><td style="text-align:right;font-weight:600;color:${runningBalance>=0?"var(--ac)":"var(--dn)"}">${runningBalance?fmtS(runningBalance):"—"}</td></tr>`});
+    h+=`<tr class="tr"><td>Total</td><td style="text-align:right;color:var(--ac);font-weight:700">${fmt(ytd2.income)}</td><td style="text-align:right;color:var(--dn);font-weight:700">${fmt(ytd2.expenses)}</td><td style="text-align:right;font-weight:700;color:${ytd2.net>=0?"var(--ac)":"var(--dn)"}">${fmtS(ytd2.net)}</td><td style="text-align:right;font-weight:700;color:${runningBalance>=0?"var(--ac)":"var(--dn)"}">${fmtS(runningBalance)}</td></tr>`;
+    h+=`</tbody></table></div>`;
+    // Cash flow sparkline
+    let rb2=0;const cfVals=MS.map(m=>{rb2+=stats[m].net;return rb2});
+    h+=`<div style="margin-top:12px"><div class="cl">Running Balance Trend</div>${spark(cfVals,rb2>=0?pal.accent:pal.danger,300,50)}</div></div>`;
+
+    // ═══ BREAK-EVEN ANALYSIS ═══
+    const fixedCosts=co.fixedCosts||0;
+    const variableCosts=fixedCosts>0?ytd2.expenses-fixedCosts*mCount:0;
+    const variableRatio=ytd2.income>0&&fixedCosts>0?(variableCosts/ytd2.income):0;
+    const breakEvenRevenue=fixedCosts>0&&variableRatio<1?fixedCosts/(1-variableRatio):0;
+    const breakEvenDays=avgIncome>0?Math.ceil((avgExpenses/avgIncome)*(co.workingDaysPerMonth||22)):0;
+    const daysToBreakEven=avgIncome>0?Math.ceil(avgExpenses/(avgIncome/(co.workingDaysPerMonth||22))):0;
+    h+=`<div class="sec"><div class="st">📍 Break-Even Analysis — ${year}</div>`;
+    if(fixedCosts>0){
+      h+=`<div class="cds" style="margin-bottom:10px">${[
+        {l:"Monthly Fixed Costs",v:fmt(fixedCosts),c:"var(--dn)",s:"Rent, salaries, etc."},
+        {l:"Break-Even Revenue",v:fmt(breakEvenRevenue),c:"var(--wn)",s:"Monthly revenue needed"},
+        {l:"Current vs Break-Even",v:avgIncome>breakEvenRevenue?"✅ Above":"⚠️ Below",c:avgIncome>breakEvenRevenue?"var(--ac)":"var(--dn)",s:avgIncome>breakEvenRevenue?`${fmt(avgIncome-breakEvenRevenue)} cushion`:"Need "+fmt(breakEvenRevenue-avgIncome)+" more"}
+      ].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c};font-size:18px">${x.v}</div><div class="css2">${x.s}</div></div>`).join("")}</div>`;
+    } else {
+      h+=`<div style="font-size:12px;color:var(--mu);margin-bottom:10px">To enable full break-even analysis, set your <strong>monthly fixed costs</strong> in Settings → Clinic / Company.</div>`;
+    }
+    h+=`<div class="cds" style="margin-bottom:0">${[
+      {l:"Days to Cover Expenses",v:`${daysToBreakEven} days`,c:daysToBreakEven<=(co.workingDaysPerMonth||22)?"var(--ac)":"var(--dn)",s:`of ${co.workingDaysPerMonth||22} working days`},
+      {l:"Avg Daily Revenue",v:fmt(avgIncome/(co.workingDaysPerMonth||22)),c:"var(--ac)",s:"Income ÷ working days"},
+      {l:"Avg Daily Expenses",v:fmt(avgExpenses/(co.workingDaysPerMonth||22)),c:"var(--dn)",s:"Expenses ÷ working days"}
+    ].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c};font-size:18px">${x.v}</div><div class="css2">${x.s}</div></div>`).join("")}</div></div>`;
+
+    // ═══ GROWTH TREND REPORT ═══
+    h+=`<div class="sec"><div class="st">📈 Growth Trend Report — ${year}</div>`;
+    if(monthsWithData.length>=2){
+      h+=`<div style="overflow-x:auto"><table class="stl"><thead><tr><th>Month</th><th style="text-align:right">Income</th><th style="text-align:right">MoM Growth</th><th style="text-align:right">Expenses</th><th style="text-align:right">MoM Change</th><th style="text-align:right">Net</th><th style="text-align:right">Margin</th></tr></thead><tbody>`;
+      monthsWithData.forEach((m,i)=>{
+        const s=stats[m];const margin=s.income>0?((s.net/s.income)*100).toFixed(0):"0";
+        let incGrowth="—",expGrowth="—",incGColor="var(--mu)",expGColor="var(--mu)";
+        if(i>0){const prev=stats[monthsWithData[i-1]];if(prev.income>0){const g=((s.income-prev.income)/prev.income*100).toFixed(1);incGrowth=(g>=0?"+":"")+g+"%";incGColor=g>=0?"var(--ac)":"var(--dn)"}if(prev.expenses>0){const g=((s.expenses-prev.expenses)/prev.expenses*100).toFixed(1);expGrowth=(g>=0?"+":"")+g+"%";expGColor=g<=0?"var(--ac)":"var(--dn)"}}
+        h+=`<tr><td style="font-weight:600">${m}</td><td style="text-align:right;color:var(--ac)">${fmt(s.income)}</td><td style="text-align:right;color:${incGColor}">${incGrowth}</td><td style="text-align:right;color:var(--dn)">${fmt(s.expenses)}</td><td style="text-align:right;color:${expGColor}">${expGrowth}</td><td style="text-align:right;font-weight:600;color:${s.net>=0?"var(--ac)":"var(--dn)"}">${fmtS(s.net)}</td><td style="text-align:right">${margin}%</td></tr>`;
+      });
+      h+=`</tbody></table></div>`;
+      // Growth sparklines
+      h+=`<div class="cds" style="grid-template-columns:1fr 1fr;margin-top:12px"><div class="cd"><div class="cl">Income Growth</div>${spark(monthsWithData.map(m=>stats[m].income),pal.accent,200,40)}</div><div class="cd"><div class="cl">Net Profit Trend</div>${spark(monthsWithData.map(m=>stats[m].net),pal.accent2||pal.accent,200,40)}</div></div>`;
+    } else {
+      h+=`<div class="empty-msg">Need at least 2 months of data to show growth trends.</div>`;
+    }
+    h+=`</div>`;
+
+    // ═══ REVENUE PER CHAIR / PER DAY ═══
+    const chairs=co.chairs||3;const wDays=co.workingDaysPerMonth||22;
+    const totalWorkDays=wDays*mCount;
+    const revPerChairMonth=avgIncome/chairs;
+    const revPerChairDay=revPerChairMonth/wDays;
+    const revPerDay=avgIncome/wDays;
+    const profitPerDay=avgNet/wDays;
+    const profitPerChairDay=profitPerDay/chairs;
+    h+=`<div class="sec"><div class="st">🪑 Revenue Per Chair / Per Day — ${year}</div>`;
+    h+=`<div style="font-size:11px;color:var(--mu);margin-bottom:12px">${chairs} chair${chairs>1?"s":""} · ${wDays} working days/month · Based on ${mCount} month${mCount>1?"s":""} of data</div>`;
+    h+=`<div class="cds" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:0">${[
+      {l:"Revenue / Day",v:fmt(revPerDay),c:"var(--ac)",s:"Total daily revenue"},
+      {l:"Revenue / Chair / Day",v:fmt(revPerChairDay),c:"var(--ac)",s:"Per chair per day"},
+      {l:"Revenue / Chair / Month",v:fmt(revPerChairMonth),c:"var(--ac)",s:"Per chair monthly"},
+      {l:"Profit / Day",v:fmtS(profitPerDay),c:profitPerDay>=0?"var(--ac)":"var(--dn)",s:"Net profit per day"},
+      {l:"Profit / Chair / Day",v:fmtS(profitPerChairDay),c:profitPerChairDay>=0?"var(--ac)":"var(--dn)",s:"Net per chair per day"},
+      {l:"Chair Utilization Target",v:fmt(avgExpenses/chairs/wDays),c:"var(--wn)",s:"Min rev/chair/day to break even"}
+    ].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c};font-size:17px">${x.v}</div><div class="css2">${x.s}</div></div>`).join("")}</div>`;
+    // Monthly per-chair table
+    h+=`<div style="overflow-x:auto;margin-top:12px"><table class="stl"><thead><tr><th>Month</th><th style="text-align:right">Rev/Day</th><th style="text-align:right">Rev/Chair/Day</th><th style="text-align:right">Profit/Day</th></tr></thead><tbody>`;
+    monthsWithData.forEach(m=>{const s=stats[m];const rd=s.income/wDays;const rcd=rd/chairs;const pd=s.net/wDays;h+=`<tr><td>${m}</td><td style="text-align:right;color:var(--ac)">${fmt(rd)}</td><td style="text-align:right">${fmt(rcd)}</td><td style="text-align:right;color:${pd>=0?"var(--ac)":"var(--dn)"}">${fmtS(pd)}</td></tr>`});
+    h+=`</tbody></table></div>`;
+    h+=`<div style="font-size:10px;color:var(--mu);margin-top:8px">💡 You can change chairs and working days in Settings → Clinic / Company</div></div>`;
+  }
+
+  // ═══ SETTINGS ═══
+  if(view==="settings"){
+    h+=`<div class="sec"><div class="st">☁️ Google Sheets Sync</div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span id="sync-badge2"></span><button class="re" style="font-size:11px;padding:5px 12px" onclick="showSetup=true;render()">⚙️ ${SCRIPT_URL?"Reconfigure":"Connect Google Sheets"}</button>${SCRIPT_URL?`<button class="re" style="font-size:11px;padding:5px 12px" onclick="doForceSync()">🔄 Force Sync</button><button class="b1" style="font-size:11px;padding:5px 14px" onclick="doPushToCloud()">⬆️ Push to Cloud</button>`:""}</div>${_pendingSync?`<div style="font-size:11px;color:var(--wn);margin-top:8px">⚠️ You have unsaved changes. Click "Push to Cloud" to sync.</div>`:""}</div>`;
+    h+=`<div class="sec"><div class="st">🏢 Clinic / Company</div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Name</label><input style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:8px" value="${esc(co.name||"")}" onchange="upd(d=>{d.company.name=this.value})" oninput="D.company.name=this.value;saveLocal()"><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block;margin-top:8px">Subtitle</label><input style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:8px" value="${esc(co.subtitle||"")}" onchange="upd(d=>{d.company.subtitle=this.value})" oninput="D.company.subtitle=this.value;saveLocal()"><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block;margin-top:8px">Logo</label><div style="display:flex;align-items:center;gap:10px">${co.logoDataUrl?`<div style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:1px solid var(--bd)"><img src="${co.logoDataUrl}" style="width:100%;height:100%;object-fit:cover"></div>`:""}<button class="b2" onclick="document.getElementById('logo-input').click()">Upload</button>${co.logoDataUrl?`<button class="b3" style="padding:6px 12px" onclick="upd(d=>{d.company.logoDataUrl=null})">Remove</button>`:""}</div></div>`;
+    h+=`<div class="sec"><div class="st">🪑 Operational Settings</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Dental Chairs</label><input type="number" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit" value="${co.chairs||3}" onchange="upd(d=>{d.company.chairs=+this.value||3})"></div><div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Working Days/Month</label><input type="number" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit" value="${co.workingDaysPerMonth||22}" onchange="upd(d=>{d.company.workingDaysPerMonth=+this.value||22})"></div><div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Monthly Fixed Costs (₱)</label><input type="number" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit" value="${co.fixedCosts||0}" onchange="upd(d=>{d.company.fixedCosts=+this.value||0})"></div></div><div style="font-size:10px;color:var(--mu);margin-top:8px">Used for Break-Even Analysis and Revenue Per Chair reports. Fixed costs = rent, salaries, insurance, etc.</div></div>`;
+    h+=`<div class="sec"><div class="st">🎨 Color Palette</div><div class="pg">${PRESETS.map(p=>{const act=p.c.accent===pal.accent&&p.c.bg===pal.bg;return`<div class="po ${act?"act":""}" style="background:${p.c.surface}" onclick='applyPreset(${JSON.stringify(p.c)})'><div class="pd"><span style="background:${p.c.accent}"></span><span style="background:${p.c.accent2}"></span><span style="background:${p.c.danger}"></span></div><div class="pl" style="color:${p.c.muted}">${p.name}</div></div>`}).join("")}</div><div style="margin-top:10px;font-size:11px;color:var(--mu);font-weight:600;margin-bottom:6px">Custom</div>${[["bg","Background"],["surface","Surface"],["accent","Accent"],["accent2","Accent 2"],["danger","Danger"],["warning","Warning"],["text","Text"],["muted","Muted"],["border","Border"]].map(([k,l])=>`<div class="cr"><label style="font-size:11px;color:var(--mu)">${l}</label><input type="color" value="${pal[k]||"#000"}" onchange="upd(d=>{d.palette.${k}=this.value})"><span style="font-size:10px;color:var(--mu);font-family:monospace">${pal[k]}</span></div>`).join("")}</div>`;
+    h+=`<div class="sec"><div class="st">💰 Income Sources<span class="sp"></span><button class="re" onclick="modalAddCat('income')">+ Add</button></div>${iCats.map(c=>`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}</span><button class="re" onclick="modalEditCat('income','${c.id}','${esc(c.icon)}','${esc(c.name)}')">✏️</button><button class="b3" onclick="if(confirm('Delete?'))doDelCat('income','${c.id}')">✕</button></div>`).join("")}</div>`;
+    h+=`<div class="sec"><div class="st">📉 Expense Categories<span class="sp"></span><button class="re" onclick="modalAddCat('expense')">+ Add</button></div>${eCats.map(c=>`<div class="rw"><span class="ri">${c.icon}</span><span class="rn">${esc(c.name)}</span><button class="re" onclick="modalEditCat('expense','${c.id}','${esc(c.icon)}','${esc(c.name)}')">✏️</button><button class="b3" onclick="if(confirm('Delete?'))doDelCat('expense','${c.id}')">✕</button></div>`).join("")}</div>`;
+    h+=`<div class="sec"><div class="st">🗃️ Data</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="b2" onclick="doExport()">Export JSON</button><button class="b3" style="padding:8px 16px;font-size:12px" onclick="if(confirm('Reset ALL data?'))doReset()">Reset All</button></div></div>`;
+  }
+
+  document.getElementById("app").innerHTML=h;
+  renderSyncBadge();
+  // Also update sync badge in settings if visible
+  const sb2 = document.getElementById("sync-badge2");
+  if(sb2){
+    if(SCRIPT_URL) sb2.innerHTML=`<span class="sync-badge sync-ok">☁️ Connected to Google Sheets</span>`;
+    else sb2.innerHTML=`<span class="sync-badge" style="background:var(--s3);color:var(--mu)">💾 Local Only — not synced</span>`;
+  }
+}
+
+// ═══ ACTIONS ═══
+function setView(v){view=v;closeModal();render()}
+function setYear(y){year=y;ensureYr(D,y);saveLocal();render()}
+function setMonth(m){month=m;render()}
+function applyPreset(c){upd(d=>{d.palette=JSON.parse(JSON.stringify(c))})}
+async function doForceSync(){if(!SCRIPT_URL)return;const choice=prompt("Type PULL to download cloud data, or PUSH to upload local data to cloud:","PUSH");if(!choice)return;if(choice.toUpperCase()==="PULL"){const cd=await cloudLoad();if(cd&&cd.company){const m=mkDefault();Object.keys(m).forEach(k=>{if(cd[k]!==undefined)m[k]=cd[k]});D=m;saveLocal();render();alert("Cloud data loaded!")}else{alert("No data found in cloud or load failed.")}}else if(choice.toUpperCase()==="PUSH"){await doPushToCloud()}else{alert("Please type PULL or PUSH")}}
+
+function modalEditVal(dt,cid,cn,v){openModal(`<h3>Edit ${cn}</h3><label>${MF[MS.indexOf(month)]} ${year} (₱)</label><input id="mv" type="number" value="${v||""}" placeholder="0" autofocus><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doSetVal('${dt}','${cid}')">Save</button></div>`);setTimeout(()=>{const el=document.getElementById("mv");if(el){el.focus();el.select();el.onkeydown=e=>{if(e.key==="Enter")doSetVal(dt,cid)}}},50)}
+function doSetVal(dt,cid){const v=+document.getElementById("mv").value||0;upd(d=>{ensureYr(d,year);d.years[year][dt][month][cid]=v});closeModal()}
+
+function modalEditBudget(planType,cid,cn,currentVal,currentPct){
+  const isExpense=planType==="expensePlan";
+  const pctVal=currentPct||0;
+  openModal(`<h3>Budget: ${cn}</h3><label>${MF[MS.indexOf(month)]} ${year} — Fixed Amount (₱)</label><input id="mbv" type="number" value="${currentVal||""}" placeholder="0">${isExpense?`<label>OR Set as % of Gross Income</label><input id="mbp" type="number" value="${pctVal||""}" placeholder="e.g. 10 for 10%" min="0" max="100"><div style="font-size:10px;color:var(--mu);margin-top:4px">If % is set, budget auto-calculates from income each month. Set to 0 to use fixed amount instead.</div>`:""}<div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doSaveBudget('${planType}','${cid}')">Save</button></div>`);
+  setTimeout(()=>{const el=document.getElementById("mbv");if(el){el.focus();el.select()}},50);
+}
+function doSaveBudget(planType,cid){
+  const v=+document.getElementById("mbv").value||0;
+  const pEl=document.getElementById("mbp");
+  const p2=pEl?(+pEl.value||0):0;
+  upd(d=>{
+    ensureYr(d,year);
+    if(!d.years[year].budget)d.years[year].budget={incomePlan:{},expensePlan:{}};
+    if(!d.years[year].budget[planType])d.years[year].budget[planType]={};
+    if(!d.years[year].budget[planType][month])d.years[year].budget[planType][month]={};
+    d.years[year].budget[planType][month][cid]=v;
+    if(p2>0){if(!d.budgetPct)d.budgetPct={};d.budgetPct[cid]=p2}
+    else if(d.budgetPct&&d.budgetPct[cid])delete d.budgetPct[cid];
+  });
+  closeModal();
+}
+function modalEditCat(ct,id,icon,name){openModal(`<h3>Edit Category</h3><label>Icon</label><input id="mci" value="${icon}" maxlength="4"><label>Name</label><input id="mcn" value="${name}"><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doEditCat('${ct}','${id}')">Save</button></div>`)}
+function doEditCat(ct,id){const ic=document.getElementById("mci").value,nm=document.getElementById("mcn").value;upd(d=>{const c=d[ct+"Cats"].find(x=>x.id===id);if(c){c.icon=ic;c.name=nm}});closeModal()}
+function modalAddCat(ct){const label=ct==="income"?"Income Source":"Expense Category";openModal(`<h3>Add ${label}</h3><label>Icon</label><input id="mci" value="${ct==="income"?"💰":"📄"}" maxlength="4"><label>Name</label><input id="mcn" placeholder="e.g. ${ct==="income"?"Associate Dr. X":"Lab Equipment"}"><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doAddCat('${ct}')">Add</button></div>`)}
+function doAddCat(ct){const n=document.getElementById("mcn").value,ic=document.getElementById("mci").value;if(!n)return;upd(d=>{d[ct+"Cats"].push({id:uid(),name:n,icon:ic||"📄"})});closeModal()}
+function doDelCat(ct,id){upd(d=>{d[ct+"Cats"]=d[ct+"Cats"].filter(x=>x.id!==id)})}
+
+function modalAddEntry(){const iCats=D.incomeCats,eCats=D.expenseCats;openModal(`<h3>Add Entry — ${MF[MS.indexOf(month)]} ${year}</h3><label>Type</label><select id="met" onchange="updateEntryCats()"><option value="expenses">Expense</option><option value="income">Income</option></select><label>Category</label><select id="mec">${eCats.map(c=>`<option value="${c.id}">${c.icon} ${esc(c.name)}</option>`).join("")}</select><label>Description</label><input id="med" placeholder="e.g. Globe KDENTAL"><label>Amount (₱)</label><input id="mea" type="number" placeholder="0" autofocus><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doAddEntry()">Add</button></div>`);setTimeout(()=>{const el=document.getElementById("mea");if(el)el.focus()},50)}
+function updateEntryCats(){const t=document.getElementById("met").value;const cats=t==="income"?D.incomeCats:D.expenseCats;document.getElementById("mec").innerHTML=cats.map(c=>`<option value="${c.id}">${c.icon} ${esc(c.name)}</option>`).join("")}
+function doAddEntry(){const t=document.getElementById("met").value,cat=document.getElementById("mec").value,desc=document.getElementById("med").value,amt=+document.getElementById("mea").value;if(!amt||amt<=0)return;const catObj=[...D.incomeCats,...D.expenseCats].find(c=>c.id===cat);upd(d=>{ensureYr(d,year);d.years[year].entries[month].push({type:t,category:cat,description:desc,amount:amt,id:uid(),ts:Date.now()});d.years[year][t][month][cat]=(d.years[year][t][month][cat]||0)+amt},{type:t,category:catObj?.name||cat,description:desc,amount:amt,period:`${month} ${year}`});closeModal()}
+function doDelEntry(m,eid){upd(d=>{ensureYr(d,year);const i=d.years[year].entries[m].findIndex(e=>e.id===eid);if(i>=0){const e=d.years[year].entries[m][i];d.years[year][e.type][m][e.category]=Math.max(0,(d.years[year][e.type][m][e.category]||0)-e.amount);d.years[year].entries[m].splice(i,1)}})}
+
+function modalAddRec(){const cats=[...D.incomeCats,...D.expenseCats];openModal(`<h3>Add Recurring</h3><label>Name</label><input id="mrn" placeholder="e.g. Converge WiFi"><label>Type</label><select id="mrt"><option value="expenses">Expense</option><option value="income">Income</option></select><label>Category</label><select id="mrc">${cats.map(c=>`<option value="${c.id}">${c.icon} ${esc(c.name)}</option>`).join("")}</select><label>Monthly Amount (₱)</label><input id="mra" type="number" placeholder="0"><label>Start</label><div class="flex-row"><select id="mrsm">${MS.map((m,i)=>`<option value="${i}">${m}</option>`).join("")}</select><input id="mrsy" type="number" value="${year}" style="width:80px"></div><label>End (blank = ongoing)</label><div class="flex-row"><select id="mrem">${MS.map((m,i)=>`<option value="${i}"${i===11?" selected":""}>${m}</option>`).join("")}</select><input id="mrey" type="number" placeholder="Ongoing" style="width:80px"></div><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doAddRec()">Add</button></div>`)}
+function doAddRec(){const n=document.getElementById("mrn").value,a=+document.getElementById("mra").value;if(!n||!a)return;upd(d=>{d.recurring.push({id:uid(),name:n,type:document.getElementById("mrt").value,category:document.getElementById("mrc").value,amount:a,startMonth:+document.getElementById("mrsm").value,startYear:+document.getElementById("mrsy").value||year,endMonth:+document.getElementById("mrem").value,endYear:+document.getElementById("mrey").value||9999,active:true})});closeModal()}
+function doDelRec(id){upd(d=>{d.recurring=d.recurring.filter(x=>x.id!==id)})}
+function doTogRec(id){upd(d=>{const r=d.recurring.find(x=>x.id===id);if(r)r.active=!r.active})}
+function doApplyRec(id){const rec=D.recurring.find(r=>r.id===id);if(!rec)return;upd(d=>{ensureYr(d,year);MS.forEach((m,mi)=>{const sy=rec.startYear||year,ey=rec.endYear||9999,sm=rec.startMonth||0,em=rec.endMonth||11;if(year<sy||year>ey)return;if(year===sy&&mi<sm)return;if(year===ey&&mi>em)return;if(d.years[year].entries[m].some(e=>e.recurringId===rec.id&&e.recurringMonth===mi))return;d.years[year].entries[m].push({type:rec.type,category:rec.category,description:rec.name+" (recurring)",amount:rec.amount,recurringId:rec.id,recurringMonth:mi,id:uid(),ts:Date.now()});d.years[year][rec.type][m][rec.category]=(d.years[year][rec.type][m][rec.category]||0)+rec.amount})})}
+
+function modalEditGoal(f,l,v){const u=f==="emergencyFundPct"?"Percentage (%)":"Amount (₱)";openModal(`<h3>${l}</h3><label>${u}</label><input id="mgv" type="number" value="${v||""}" placeholder="0" autofocus><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doEditGoal('${f}')">Save</button></div>`);setTimeout(()=>{const el=document.getElementById("mgv");if(el){el.focus();el.select();el.onkeydown=e=>{if(e.key==="Enter")doEditGoal(f)}}},50)}
+function doEditGoal(f){upd(d=>{d.goals[f]=+document.getElementById("mgv").value||0});closeModal()}
+
+function modalEditBudget(planType,cid,cn,v,pctVal){
+  const isExpense=planType==="expensePlan";
+  const pctField=isExpense?`<label>Or set as % of Gross Income</label><input id="mbp" type="number" value="${pctVal||""}" placeholder="e.g. 10 for 10%" step="0.5"><div style="font-size:10px;color:var(--mu);margin-top:4px">If % is set, it overrides the fixed amount and auto-calculates from actual income each month.</div>`:""
+  openModal(`<h3>Budget: ${cn}</h3><label>${MF[MS.indexOf(month)]} ${year} — Fixed Amount (₱)</label><input id="mbv" type="number" value="${v||""}" placeholder="0" autofocus>${pctField}<div style="margin-top:8px;font-size:10px;color:var(--mu)"><button class="re" style="font-size:10px" onclick="doCopyBudgetToAll('${planType}','${cid}')">📋 Copy to all months in ${year}</button></div><div class="ma"><button class="b2" onclick="closeModal()">Cancel</button><button class="b1" onclick="doSaveBudget('${planType}','${cid}',${isExpense})">Save</button></div>`);
+  setTimeout(()=>{const el=document.getElementById("mbv");if(el){el.focus();el.select();el.onkeydown=e=>{if(e.key==="Enter")doSaveBudget(planType,cid,isExpense)}}},50)
+}
+function doSaveBudget(planType,cid,isExpense){
+  const v=+document.getElementById("mbv").value||0;
+  const p=isExpense?(+document.getElementById("mbp")?.value||0):0;
+  upd(d=>{
+    ensureYr(d,year);
+    if(!d.years[year].budget)d.years[year].budget={incomePlan:{},expensePlan:{}};
+    if(!d.years[year].budget[planType])d.years[year].budget[planType]={};
+    if(!d.years[year].budget[planType][month])d.years[year].budget[planType][month]={};
+    d.years[year].budget[planType][month][cid]=v;
+    if(isExpense){if(!d.budgetPct)d.budgetPct={};if(p>0)d.budgetPct[cid]=p;else delete d.budgetPct[cid]}
+  });closeModal()
+}
+function doCopyBudgetToAll(planType,cid){
+  const v=+document.getElementById("mbv").value||0;
+  if(!v&&!confirm("Copy ₱0 to all months?"))return;
+  upd(d=>{
+    ensureYr(d,year);
+    if(!d.years[year].budget)d.years[year].budget={incomePlan:{},expensePlan:{}};
+    if(!d.years[year].budget[planType])d.years[year].budget[planType]={};
+    MS.forEach(m=>{if(!d.years[year].budget[planType][m])d.years[year].budget[planType][m]={};d.years[year].budget[planType][m][cid]=v})
+  });closeModal()
+}
+
+function doExport(){const j=JSON.stringify(D,null,2);const b=new Blob([j],{type:"application/json"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=`kdental-backup-${year}.json`;a.click();URL.revokeObjectURL(u)}
+function doReset(){D=mkDefault();ensureYr(D,year);saveLocal();cloudSave(D);render()}
+
+
+// ═══ AUTO-RESTORE FROM BACKUP ═══
+const _backupData = '{"company":{"name":"KDental","subtitle":"TRACKER","logoDataUrl":"data:image/png;base64,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"},"palette":{"bg":"#110d0f","surface":"#1a1416","surface2":"#231b1e","surface3":"#2e2326","border":"#3f3034","text":"#f0e4e6","muted":"#9a7f84","accent":"#e0707a","accent2":"#c9a050","danger":"#d04a4a","warning":"#d4b050"},"incomeCats":[{"id":"doc_kristine","name":"KDC Income","icon":"\\ud83d\\udc69\\u200d\\u2695\\ufe0f"},{"id":"assoc_income","name":"Dr. Nianne Income","icon":"\\ud83d\\udc69\\u200d\\u2695"},{"id":"other_income","name":"Other Income","icon":"\\ud83d\\udcb0"},{"id":"mojpzvhhy6180","name":"Doc Kristine Income","icon":"\\ud83d\\udc69\\u200d\\u2695"}],"expenseCats":[{"id":"payroll","name":"Payroll","icon":"\\ud83d\\udc65"},{"id":"benefits","name":"Benefits","icon":"\\ud83c\\udf81"},{"id":"meals","name":"Meals","icon":"\\ud83c\\udf7d\\ufe0f"},{"id":"rent","name":"Rent / Assoc Dues","icon":"\\ud83c\\udfe2"},{"id":"utilities","name":"Utilities","icon":"\\ud83d\\udca1"},{"id":"bir_dues","name":"BIR / Gov\'t Dues","icon":"\\ud83c\\udfdb\\ufe0f"},{"id":"new_equip","name":"New Equipment","icon":"\\ud83d\\udd27"},{"id":"lab","name":"Laboratory","icon":"\\ud83e\\uddea"},{"id":"grocery","name":"Grocery","icon":"\\ud83d\\uded2"},{"id":"office_supplies","name":"Office Supplies","icon":"\\ud83d\\udcce"},{"id":"dental_supplies","name":"Dental Supplies","icon":"\\ud83e\\uddb7"},{"id":"miscellaneous","name":"Miscellaneous","icon":"\\ud83d\\udce6"},{"id":"savings","name":"Savings","icon":"\\ud83c\\udfe6"},{"id":"kdc_prof_fees","name":"KDC Prof Fees","icon":"\\ud83d\\udcbc"},{"id":"marketing","name":"Marketing / Social Media","icon":"\\ud83d\\udce3"},{"id":"subscriptions","name":"Subscriptions","icon":"\\ud83d\\udd04"},{"id":"tithes","name":"Tithes / CCF","icon":"\\u26ea"},{"id":"continuing_ed","name":"Continuing Education","icon":"\\ud83d\\udcda"}],"recurring":[{"id":"mojqc17excksz","name":"2304 RENT","type":"expenses","category":"rent","amount":25312.12,"startMonth":0,"startYear":2026,"endMonth":8,"endYear":2026,"active":true},{"id":"mojqekyrvv2lt","name":"2304 RENT","type":"expenses","category":"rent","amount":26338.58,"startMonth":9,"startYear":2026,"endMonth":7,"endYear":2027,"active":true},{"id":"mojqfl84ybpp6","name":"1214 CONVERGE WIFI","type":"expenses","category":"utilities","amount":2000,"startMonth":0,"startYear":2026,"endMonth":11,"endYear":9999,"active":true},{"id":"mojqion9bq573","name":"2304 CONVERGE WIFI","type":"expenses","category":"utilities","amount":1499,"startMonth":4,"startYear":2026,"endMonth":11,"endYear":9999,"active":true},{"id":"mojqje5yddtv9","name":"SERIOUSMD","type":"expenses","category":"subscriptions","amount":1998.75,"startMonth":0,"startYear":2026,"endMonth":11,"endYear":9999,"active":true},{"id":"mojqlig90nl8u","name":"ACCOUNTANT RETAINER","type":"expenses","category":"payroll","amount":3360,"startMonth":0,"startYear":2026,"endMonth":11,"endYear":9999,"active":true},{"id":"mojqq16cnv2sf","name":"GLOBE 555","type":"expenses","category":"utilities","amount":599,"startMonth":0,"startYear":2026,"endMonth":11,"endYear":9999,"active":true},{"id":"mojqqd3kzs5lj","name":"GLOBE 333","type":"expenses","category":"utilities","amount":599,"startMonth":0,"startYear":2026,"endMonth":11,"endYear":9999,"active":true},{"id":"mojqqo5eq1vbj","name":"GLOBE KDC","type":"expenses","category":"utilities","amount":999,"startMonth":0,"startYear":2026,"endMonth":11,"endYear":9999,"active":true}],"goals":{"monthlyIncome":0,"monthlyExpenseLimit":0,"savingsTarget":0,"emergencyFundPct":8},"years":{"2026":{"income":{"Jan":{},"Feb":{},"Mar":{},"Apr":{},"May":{},"Jun":{},"Jul":{},"Aug":{},"Sep":{},"Oct":{},"Nov":{},"Dec":{}},"expenses":{"Jan":{"rent":25312.12,"utilities":19365.37,"subscriptions":7992.25,"payroll":132175.22,"marketing":15155.2},"Feb":{"rent":25312.12,"utilities":4197,"subscriptions":1998.75,"payroll":3360},"Mar":{"rent":25312.12,"utilities":4197,"subscriptions":1998.75,"payroll":3360},"Apr":{"rent":25312.12,"utilities":4197,"subscriptions":1998.75,"payroll":3360},"May":{"rent":25312.12,"utilities":5696,"subscriptions":1998.75,"payroll":3360},"Jun":{"rent":25312.12,"utilities":5696,"subscriptions":1998.75,"payroll":3360},"Jul":{"rent":25312.12,"utilities":5696,"subscriptions":1998.75,"payroll":3360},"Aug":{"rent":25312.12,"utilities":5696,"subscriptions":1998.75,"payroll":3360},"Sep":{"rent":25312.12,"utilities":5696,"subscriptions":1998.75,"payroll":3360},"Oct":{"rent":26338.58,"utilities":5696,"subscriptions":1998.75,"payroll":3360},"Nov":{"rent":26338.58,"utilities":5696,"subscriptions":1998.75,"payroll":3360},"Dec":{"rent":26338.58,"utilities":5696,"subscriptions":1998.75,"payroll":3360}},"entries":{"Jan":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":25312.12,"recurringId":"mojqc17excksz","recurringMonth":0,"id":"mojqc8mmu2vks","ts":1777447484590},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":0,"id":"mojqhkm125b1r","ts":1777447733401},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":0,"id":"mojqjfu7dzeiv","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":0,"id":"mojqll00pem49","ts":1777447920528},{"type":"expenses","category":"payroll","description":"JAQ","amount":11809.66,"id":"mojqmhtoibj7s","ts":1777447963068},{"type":"expenses","category":"payroll","description":"AYHEN","amount":9658.79,"id":"mojqmsw8j1yne","ts":1777447977416},{"type":"expenses","category":"payroll","description":"HEIDI","amount":11604.67,"id":"mojqna1toajg5","ts":1777447999650},{"type":"expenses","category":"payroll","description":"ARIANE","amount":7708.79,"id":"mojqnm50m5zfi","ts":1777448015316},{"type":"expenses","category":"payroll","description":"JACKIE","amount":7426.84,"id":"mojqnz1wk4x2j","ts":1777448032052},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":0,"id":"mojqqq4yr5eks","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":0,"id":"mojqqquroxw8r","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":0,"id":"mojqqrl9yh1qt","ts":1777448162349},{"type":"expenses","category":"utilities","description":"2304 MERALCO","amount":2133.71,"id":"mojqrsa12e3ea","ts":1777448209897},{"type":"expenses","category":"utilities","description":"1214 MERALCO","amount":13034.66,"id":"mojqs8v1jnpa0","ts":1777448231389},{"type":"expenses","category":"payroll","description":"JAQ","amount":20747.61,"id":"mojqsrom6qogn","ts":1777448255782},{"type":"expenses","category":"payroll","description":"HEIDI","amount":17787.22,"id":"mojqt26lhb7tz","ts":1777448269389},{"type":"expenses","category":"payroll","description":"AYHEN","amount":15734.57,"id":"mojqtbwzp2b7c","ts":1777448282003},{"type":"expenses","category":"payroll","description":"JACKIE","amount":13269.37,"id":"mojqtlwpuab9j","ts":1777448294953},{"type":"expenses","category":"payroll","description":"ARIANE","amount":13067.7,"id":"mojqtuda7hfta","ts":1777448305918},{"type":"expenses","category":"marketing","description":"FB ADS","amount":15155.2,"id":"mojqugoidhibt","ts":1777448334834},{"type":"expenses","category":"subscriptions","description":"MANYCHAT","amount":5686,"id":"mojqusajmzpeg","ts":1777448349883},{"type":"expenses","category":"subscriptions","description":"CHATGPT","amount":307.5,"id":"mojqv5y6v5q4w","ts":1777448367582}],"Feb":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":25312.12,"recurringId":"mojqc17excksz","recurringMonth":1,"id":"mojqc8mm7w9hj","ts":1777447484590},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":1,"id":"mojqhkm1yz3dy","ts":1777447733401},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":1,"id":"mojqjfu7pf2ei","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":1,"id":"mojqll00gqo6h","ts":1777447920528},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":1,"id":"mojqqq4yxnc9x","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":1,"id":"mojqqqurk3nt4","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":1,"id":"mojqqrl9c7kql","ts":1777448162349}],"Mar":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":25312.12,"recurringId":"mojqc17excksz","recurringMonth":2,"id":"mojqc8mmweses","ts":1777447484590},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":2,"id":"mojqhkm11xi75","ts":1777447733401},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":2,"id":"mojqjfu7rkbqu","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":2,"id":"mojqll00xi0d0","ts":1777447920528},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":2,"id":"mojqqq4yvf8cl","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":2,"id":"mojqqqurdnvvh","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":2,"id":"mojqqrl9uezzt","ts":1777448162349}],"Apr":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":25312.12,"recurringId":"mojqc17excksz","recurringMonth":3,"id":"mojqc8mmqp748","ts":1777447484590},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":3,"id":"mojqhkm1i8keo","ts":1777447733401},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":3,"id":"mojqjfu7tzr6d","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":3,"id":"mojqll00pcmtf","ts":1777447920528},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":3,"id":"mojqqq4yqxujt","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":3,"id":"mojqqqur4whbv","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":3,"id":"mojqqrl9uve5y","ts":1777448162349}],"May":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":25312.12,"recurringId":"mojqc17excksz","recurringMonth":4,"id":"mojqc8mm0outs","ts":1777447484590},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":4,"id":"mojqhkm1qkc15","ts":1777447733401},{"type":"expenses","category":"utilities","description":"2304 CONVERGE WIFI (recurring)","amount":1499,"recurringId":"mojqion9bq573","recurringMonth":4,"id":"mojqitnzh2jns","ts":1777447791791},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":4,"id":"mojqjfu7tjzah","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":4,"id":"mojqll00jfzdo","ts":1777447920528},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":4,"id":"mojqqq4yp7lcn","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":4,"id":"mojqqqurb5hvm","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":4,"id":"mojqqrl9ehig9","ts":1777448162349}],"Jun":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":25312.12,"recurringId":"mojqc17excksz","recurringMonth":5,"id":"mojqc8mmzq8wn","ts":1777447484590},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":5,"id":"mojqhkm1w5rre","ts":1777447733401},{"type":"expenses","category":"utilities","description":"2304 CONVERGE WIFI (recurring)","amount":1499,"recurringId":"mojqion9bq573","recurringMonth":5,"id":"mojqitnzb0fwy","ts":1777447791791},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":5,"id":"mojqjfu7cz24h","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":5,"id":"mojqll00sn00u","ts":1777447920528},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":5,"id":"mojqqq4yo62dy","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":5,"id":"mojqqqurpez90","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":5,"id":"mojqqrl9roc0p","ts":1777448162349}],"Jul":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":25312.12,"recurringId":"mojqc17excksz","recurringMonth":6,"id":"mojqc8mmpqoy8","ts":1777447484590},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":6,"id":"mojqhkm1sisal","ts":1777447733401},{"type":"expenses","category":"utilities","description":"2304 CONVERGE WIFI (recurring)","amount":1499,"recurringId":"mojqion9bq573","recurringMonth":6,"id":"mojqitnzd6ssv","ts":1777447791791},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":6,"id":"mojqjfu7ltioy","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":6,"id":"mojqll00xilmc","ts":1777447920528},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":6,"id":"mojqqq4yw8hh8","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":6,"id":"mojqqqurnhj52","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":6,"id":"mojqqrl9kny4d","ts":1777448162349}],"Aug":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":25312.12,"recurringId":"mojqc17excksz","recurringMonth":7,"id":"mojqc8mmau2rh","ts":1777447484590},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":7,"id":"mojqhkm1pq3xj","ts":1777447733401},{"type":"expenses","category":"utilities","description":"2304 CONVERGE WIFI (recurring)","amount":1499,"recurringId":"mojqion9bq573","recurringMonth":7,"id":"mojqitnzxk13r","ts":1777447791791},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":7,"id":"mojqjfu7nebw0","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":7,"id":"mojqll007ahii","ts":1777447920528},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":7,"id":"mojqqq4yfsyrk","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":7,"id":"mojqqqur76cmi","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":7,"id":"mojqqrl9zdku4","ts":1777448162349}],"Sep":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":25312.12,"recurringId":"mojqc17excksz","recurringMonth":8,"id":"mojqc8mmqv5jc","ts":1777447484590},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":8,"id":"mojqhkm1c8bt3","ts":1777447733401},{"type":"expenses","category":"utilities","description":"2304 CONVERGE WIFI (recurring)","amount":1499,"recurringId":"mojqion9bq573","recurringMonth":8,"id":"mojqitnzgkh2f","ts":1777447791791},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":8,"id":"mojqjfu7bdegh","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":8,"id":"mojqll00gftcw","ts":1777447920528},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":8,"id":"mojqqq4yzp9mg","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":8,"id":"mojqqqurijttl","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":8,"id":"mojqqrl9rfu1t","ts":1777448162349}],"Oct":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":26338.58,"recurringId":"mojqekyrvv2lt","recurringMonth":9,"id":"mojqhjm15bjan","ts":1777447732105},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":9,"id":"mojqhkm1p5rx0","ts":1777447733401},{"type":"expenses","category":"utilities","description":"2304 CONVERGE WIFI (recurring)","amount":1499,"recurringId":"mojqion9bq573","recurringMonth":9,"id":"mojqitnzuwr4k","ts":1777447791791},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":9,"id":"mojqjfu7q7r8i","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":9,"id":"mojqll00hfrxl","ts":1777447920528},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":9,"id":"mojqqq4y0b4jm","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":9,"id":"mojqqqurvupe8","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":9,"id":"mojqqrl9q9imc","ts":1777448162349}],"Nov":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":26338.58,"recurringId":"mojqekyrvv2lt","recurringMonth":10,"id":"mojqhjm1wyo1j","ts":1777447732105},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":10,"id":"mojqhkm11hxdu","ts":1777447733401},{"type":"expenses","category":"utilities","description":"2304 CONVERGE WIFI (recurring)","amount":1499,"recurringId":"mojqion9bq573","recurringMonth":10,"id":"mojqitnzn9ada","ts":1777447791791},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":10,"id":"mojqjfu73ua13","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":10,"id":"mojqll0061b1c","ts":1777447920528},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":10,"id":"mojqqq4y6o9xg","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":10,"id":"mojqqqurausmx","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":10,"id":"mojqqrl940qpe","ts":1777448162349}],"Dec":[{"type":"expenses","category":"rent","description":"2304 RENT (recurring)","amount":26338.58,"recurringId":"mojqekyrvv2lt","recurringMonth":11,"id":"mojqhjm191rb6","ts":1777447732105},{"type":"expenses","category":"utilities","description":"1214 CONVERGE WIFI (recurring)","amount":2000,"recurringId":"mojqfl84ybpp6","recurringMonth":11,"id":"mojqhkm1ass5b","ts":1777447733401},{"type":"expenses","category":"utilities","description":"2304 CONVERGE WIFI (recurring)","amount":1499,"recurringId":"mojqion9bq573","recurringMonth":11,"id":"mojqitnzz9zfr","ts":1777447791791},{"type":"expenses","category":"subscriptions","description":"SERIOUSMD (recurring)","amount":1998.75,"recurringId":"mojqje5yddtv9","recurringMonth":11,"id":"mojqjfu73a369","ts":1777447820527},{"type":"expenses","category":"payroll","description":"ACCOUNTANT RETAINER (recurring)","amount":3360,"recurringId":"mojqlig90nl8u","recurringMonth":11,"id":"mojqll005houx","ts":1777447920528},{"type":"expenses","category":"utilities","description":"GLOBE 555 (recurring)","amount":599,"recurringId":"mojqq16cnv2sf","recurringMonth":11,"id":"mojqqq4yz8tq2","ts":1777448160466},{"type":"expenses","category":"utilities","description":"GLOBE 333 (recurring)","amount":599,"recurringId":"mojqqd3kzs5lj","recurringMonth":11,"id":"mojqqqurr2u2r","ts":1777448161395},{"type":"expenses","category":"utilities","description":"GLOBE KDC (recurring)","amount":999,"recurringId":"mojqqo5eq1vbj","recurringMonth":11,"id":"mojqqrl92qcvw","ts":1777448162349}]}}}}';
+if (!localStorage.getItem(SK) || !JSON.parse(localStorage.getItem(SK)).years || Object.keys(JSON.parse(localStorage.getItem(SK)).years).length === 0) {
+  try {
+    const restored = JSON.parse(_backupData);
+    const m = mkDefault();
+    Object.keys(m).forEach(k => { if (restored[k] !== undefined) m[k] = restored[k] });
+    D = m;
+    saveLocal();
+    console.log("Data auto-restored from embedded backup!");
+  } catch(e) { console.error("Restore failed:", e); }
+}
+
+// ═══ INIT ═══
+document.getElementById("modal-overlay").addEventListener("click",e=>{if(e.target===e.currentTarget)closeModal()});
+document.getElementById("fab").addEventListener("click",()=>modalAddEntry());
+document.getElementById("logo-input").addEventListener("change",function(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>upd(d=>{d.company.logoDataUrl=ev.target.result});r.readAsDataURL(f)});
+
+// Load local first, then try cloud
+loadLocal();
+ensureYr(D,year);
+
+if (!SCRIPT_URL) {
+  // First time — show setup
+  showSetup = true;
+  render();
+} else {
+  // Has URL — render immediately with local data, then sync from cloud in background
+  render();
+  cloudLoad().then(cd => {
+    if (cd && cd.company) {
+      const m = mkDefault();
+      Object.keys(m).forEach(k => { if (cd[k] !== undefined) m[k] = cd[k] });
+      D = m;
+      saveLocal();
+      render();
+    }
+    renderSyncBadge();
+  });
+}
+</script>
+</body>
+</html>
