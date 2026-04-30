@@ -224,18 +224,37 @@ async function doPushToCloud() {
   if (!SCRIPT_URL) { alert("Not connected to Google Sheets. Go to Settings → Reconfigure."); return; }
   clearTimeout(_syncTimer);
   await _doCloudSave(D);
-  if (syncStatus === "ok") alert("Data pushed to Google Sheets successfully!");
-  else alert("Push failed. Check your internet connection and try again.");
+  if (syncStatus === "ok") { alert("✅ Data pushed to Google Sheets successfully!"); render(); }
+  else alert("❌ Push failed. Check your internet connection and try again.");
+}
+
+async function doPullFromCloud() {
+  if (!SCRIPT_URL) { alert("Not connected to Google Sheets. Go to Settings → Reconfigure."); return; }
+  if (!confirm("Download data from Google Sheets? This will replace your local data.")) return;
+  const cd = await cloudLoad();
+  if (cd && cd.company) {
+    const m2 = mkDefault();
+    Object.keys(m2).forEach(k => { if (cd[k] !== undefined) m2[k] = cd[k] });
+    D = m2;
+    saveLocal();
+    _pendingSync = false;
+    alert("✅ Data loaded from Google Sheets!");
+    render();
+  } else {
+    alert("❌ No data found in cloud or download failed.");
+  }
 }
 
 function renderSyncBadge() {
+  const badge = syncStatus === "ok" ? `<span class="sync-badge sync-ok">☁️ Synced${lastSync ? " " + lastSync.toLocaleTimeString() : ""}</span>`
+    : syncStatus === "syncing" ? `<span class="sync-badge sync-ing">⏳ Syncing...</span>`
+    : syncStatus === "error" ? `<span class="sync-badge sync-err">⚠️ Sync Error</span>`
+    : syncStatus === "none" ? `<span class="sync-badge" style="background:var(--s3);color:var(--mu)">💾 Local Only</span>`
+    : `<span class="sync-badge sync-ok">☁️ Connected</span>`;
   const el = document.getElementById("sync-badge");
-  if (!el) return;
-  if (syncStatus === "ok") el.innerHTML = `<span class="sync-badge sync-ok">☁️ Synced${lastSync ? " " + lastSync.toLocaleTimeString() : ""}</span>`;
-  else if (syncStatus === "syncing") el.innerHTML = `<span class="sync-badge sync-ing">⏳ Syncing...</span>`;
-  else if (syncStatus === "error") el.innerHTML = `<span class="sync-badge sync-err">⚠️ Sync Error</span>`;
-  else if (syncStatus === "none") el.innerHTML = `<span class="sync-badge" style="background:var(--s3);color:var(--mu)">💾 Local Only</span>`;
-  else el.innerHTML = `<span class="sync-badge sync-ok">☁️ Connected</span>`;
+  if (el) el.innerHTML = badge;
+  const el2 = document.getElementById("sync-badge-dash");
+  if (el2) el2.innerHTML = badge;
 }
 
 // ═══ STATE ═══
@@ -246,11 +265,21 @@ let showSetup = false;
 function loadLocal() { try { const s = localStorage.getItem(SK); if (s) { const p = JSON.parse(s); const m = mkDefault(); Object.keys(m).forEach(k => { if (p[k] !== undefined) m[k] = p[k] }); D = m } } catch {} }
 function saveLocal() { try { localStorage.setItem(SK, JSON.stringify(D)) } catch {} }
 
+let _autoSyncTimer = null;
+
 function upd(fn, lastAction) {
   fn(D);
   saveLocal();
-  cloudSave(D, lastAction);
+  _pendingSync = true;
   render();
+  // Auto-push to cloud every 30 seconds after last change
+  if (SCRIPT_URL) {
+    clearTimeout(_autoSyncTimer);
+    _autoSyncTimer = setTimeout(async () => {
+      await _doCloudSave(D);
+      render();
+    }, 30000);
+  }
 }
 
 // ═══ HELPERS ═══
@@ -354,6 +383,8 @@ function render(){
 
   // ═══ DASHBOARD ═══
   if(view==="dashboard"){
+    // Sync buttons
+    if(SCRIPT_URL){h+=`<div class="sec" style="padding:10px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span id="sync-badge-dash"></span>${_pendingSync?`<span style="font-size:10px;color:var(--wn)">⚠️ Unsaved changes</span>`:""}<span class="sp"></span><button class="b1" style="font-size:11px;padding:6px 14px" onclick="doPushToCloud()">⬆️ Push to Cloud</button><button class="b2" style="font-size:11px;padding:6px 14px" onclick="doPullFromCloud()">⬇️ Sync from Cloud</button></div>`}
     h+=`<div class="cds"><div class="cd"><div class="cl">Gross Income</div><div class="cvl" style="color:var(--ac)">${fmt(cs.income)}</div><div class="css2">YTD: ${fmt(ytd2.income)}</div></div><div class="cd"><div class="cl">Total Expenses</div><div class="cvl" style="color:var(--dn)">${fmt(cs.expenses)}</div><div class="css2">YTD: ${fmt(ytd2.expenses)}</div></div><div class="cd"><div class="cl">Net Profit</div><div class="cvl" style="color:${cs.net>=0?"var(--ac)":"var(--dn)"}">${cs.net?fmtS(cs.net):"—"}</div><div class="css2">YTD: ${fmtS(ytd2.net)}</div></div>${goals.emergencyFundPct>0?`<div class="cd"><div class="cl">${goals.emergencyFundPct}% Fund</div><div class="cvl" style="color:var(--wn)">${fmt(cs.income*(goals.emergencyFundPct/100))}</div><div class="css2">Emergency fund target</div></div>`:""}</div>`;
     if(goals.monthlyIncome>0||goals.monthlyExpenseLimit>0||goals.savingsTarget>0){h+=`<div class="sec"><div class="st">🎯 Goal Progress — ${MF[MS.indexOf(month)]}</div><div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:12px">${goals.monthlyIncome>0?ring(pct(cs.income,goals.monthlyIncome),"var(--ac)",56,"Income"):""}${goals.monthlyExpenseLimit>0?ring(pct(cs.expenses,goals.monthlyExpenseLimit),cs.expenses>goals.monthlyExpenseLimit?"var(--dn)":"var(--a2)",56,"Expenses"):""}${goals.savingsTarget>0?ring(pct(yd.expenses?.[month]?.savings||0,goals.savingsTarget),"var(--wn)",56,"Savings"):""}</div></div>`}
     h+=`<div class="sec"><div class="st">Monthly Overview — ${year}</div><div class="bch">${MS.map(m=>{const s=stats[m];return`<div class="bgg"><div class="bpr"><div class="br" style="height:${maxM>0?(s.income/maxM)*115:0}px;background:var(--ac);opacity:${month===m?1:.35}"></div><div class="br" style="height:${maxM>0?(s.expenses/maxM)*115:0}px;background:var(--dn);opacity:${month===m?1:.35}"></div></div><div class="bll" style="font-weight:${month===m?700:400};color:${month===m?"var(--tx)":"var(--mu)"}">${m}</div></div>`}).join("")}</div><div class="lg"><div class="lgi"><div class="ldd" style="background:var(--ac)"></div>Income</div><div class="lgi"><div class="ldd" style="background:var(--dn)"></div>Expenses</div></div></div>`;
@@ -414,6 +445,43 @@ function render(){
     const projMargin=projIncome>0?((projNet/projIncome)*100).toFixed(1):0;
     const opexRatio=ytd2.income>0?((ytd2.expenses/ytd2.income)*100).toFixed(1):0;
 
+    // ═══ MONTHLY REPORT ═══
+    const mInc=cs.income;const mExp=cs.expenses;const mNet=cs.net;
+    const mMargin=mInc>0?((mNet/mInc)*100).toFixed(1):"0.0";
+    const mOpex=mInc>0?((mExp/mInc)*100).toFixed(1):"0.0";
+    const prevIdx=MS.indexOf(month)-1;const prevM=prevIdx>=0?MS[prevIdx]:null;
+    const prevStats=prevM?stats[prevM]:null;
+    const incChange=prevStats&&prevStats.income>0?((mInc-prevStats.income)/prevStats.income*100).toFixed(1):null;
+    const expChange=prevStats&&prevStats.expenses>0?((mExp-prevStats.expenses)/prevStats.expenses*100).toFixed(1):null;
+
+    h+=`<div class="sec"><div class="st">📋 Monthly Report — ${MF[MS.indexOf(month)]} ${year}</div>`;
+    // Summary cards
+    h+=`<div class="cds" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-bottom:14px">${[
+      {l:"Income",v:fmt(mInc),c:"var(--ac)",s:incChange!==null?(incChange>=0?"+":"")+incChange+"% vs "+prevM:""},
+      {l:"Expenses",v:fmt(mExp),c:"var(--dn)",s:expChange!==null?(expChange>=0?"+":"")+expChange+"% vs "+prevM:""},
+      {l:"Net Profit",v:mNet?fmtS(mNet):"—",c:mNet>=0?"var(--ac)":"var(--dn)",s:""},
+      {l:"Profit Margin",v:mMargin+"%",c:mMargin>=20?"var(--ac)":mMargin>=10?"var(--wn)":"var(--dn)",s:"Net ÷ Income"},
+      {l:"OpEx Ratio",v:mOpex+"%",c:mOpex<=70?"var(--ac)":mOpex<=85?"var(--wn)":"var(--dn)",s:"Expenses ÷ Income"}
+    ].map(x=>`<div class="cd"><div class="cl">${x.l}</div><div class="cvl" style="color:${x.c};font-size:18px">${x.v}</div>${x.s?`<div class="css2">${x.s}</div>`:""}</div>`).join("")}</div>`;
+
+    // Income breakdown
+    h+=`<div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--ac)">💰 Income Breakdown</div>`;
+    h+=`<div style="overflow-x:auto"><table class="stl"><thead><tr><th>Source</th><th style="text-align:right">Amount</th><th style="text-align:right">% of Total</th></tr></thead><tbody>`;
+    iCats.forEach(c=>{const v=yd.income?.[month]?.[c.id]||0;if(!v)return;const p=mInc>0?((v/mInc)*100).toFixed(1):"0";h+=`<tr><td>${c.icon} ${esc(c.name)}</td><td style="text-align:right">${fmt(v)}</td><td style="text-align:right;color:var(--ac)">${p}%</td></tr>`});
+    h+=`<tr class="tr"><td>Total Income</td><td style="text-align:right;color:var(--ac)">${fmt(mInc)}</td><td style="text-align:right;color:var(--ac)">100%</td></tr></tbody></table></div>`;
+
+    // Expense breakdown with % of income and % of total expenses
+    h+=`<div style="font-size:12px;font-weight:600;margin:14px 0 8px;color:var(--dn)">📉 Expense Breakdown</div>`;
+    h+=`<div style="overflow-x:auto"><table class="stl"><thead><tr><th>Category</th><th style="text-align:right">Amount</th><th style="text-align:right">% of Expenses</th><th style="text-align:right">% of Income</th></tr></thead><tbody>`;
+    const expSorted=eCats.map(c=>({...c,val:yd.expenses?.[month]?.[c.id]||0})).filter(c=>c.val>0).sort((a,b)=>b.val-a.val);
+    expSorted.forEach(c=>{const pOfExp=mExp>0?((c.val/mExp)*100).toFixed(1):"0";const pOfInc=mInc>0?((c.val/mInc)*100).toFixed(1):"0";const overBudget=mInc>0&&(c.val/mInc)*100>20;h+=`<tr><td>${c.icon} ${esc(c.name)}</td><td style="text-align:right">${fmt(c.val)}</td><td style="text-align:right">${pOfExp}%</td><td style="text-align:right;color:${overBudget?"var(--dn)":"var(--mu)"}">${pOfInc}%</td></tr>`});
+    h+=`<tr class="tr"><td>Total Expenses</td><td style="text-align:right;color:var(--dn)">${fmt(mExp)}</td><td style="text-align:right">100%</td><td style="text-align:right;color:var(--dn)">${mOpex}%</td></tr></tbody></table></div>`;
+
+    // Visual expense % bars
+    h+=`<div style="margin-top:14px">`;
+    expSorted.slice(0,10).forEach(c=>{const pOfInc=mInc>0?((c.val/mInc)*100).toFixed(1):"0";const pOfExp=mExp>0?((c.val/mExp)*100):0;h+=`<div style="display:flex;align-items:center;gap:8px;margin:4px 0"><span style="font-size:11px;min-width:130px;color:var(--mu)">${c.icon} ${esc(c.name)}</span><div style="flex:1;height:14px;background:var(--s3);border-radius:3px;overflow:hidden;position:relative"><div style="height:100%;width:${Math.min(pOfExp,100)}%;background:var(--dn);border-radius:3px;opacity:.7"></div></div><span style="font-size:10px;font-weight:600;min-width:40px;text-align:right">${pOfInc}%</span></div>`});
+    h+=`</div></div>`;
+
     // Profit margin & key metrics
     h+=`<div class="sec"><div class="st">📐 Key Financial Metrics — ${year}</div><div class="cds" style="margin-bottom:0">${[
       {l:"Profit Margin",v:`${profitMargin}%`,c:profitMargin>=20?"var(--ac)":profitMargin>=10?"var(--wn)":"var(--dn)",s:"Net Income ÷ Revenue"},
@@ -431,6 +499,41 @@ function render(){
 
     // Quarterly
     h+=`<div class="sec"><div class="st">📊 Quarterly Report — ${year}</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">${qs.map((q,i)=>{const qMargin=q.income>0?((q.net/q.income)*100).toFixed(0):"0";return`<div class="qc"><div class="ql">${q.label} (${QS[i].join("–")})</div><div class="qv" style="color:var(--ac);font-size:16px">${fmt(q.income)}</div><div style="font-size:10px;color:var(--mu)">Income</div><div class="qv" style="color:var(--dn);font-size:14px;margin-top:4px">${fmt(q.expenses)}</div><div style="font-size:10px;color:var(--mu)">Expenses</div><div style="font-size:13px;font-weight:700;color:${q.net>=0?"var(--ac)":"var(--dn)"};margin-top:6px">${fmtS(q.net)}</div><div style="font-size:10px;color:var(--mu)">Margin: ${qMargin}%</div></div>`}).join("")}</div></div>`;
+
+    // ═══ MONTH-OVER-MONTH COMPARISON ═══
+    h+=`<div class="sec"><div class="st">📆 Month-over-Month Comparison — ${year}</div><div style="overflow-x:auto"><table class="stl"><thead><tr><th>Month</th><th style="text-align:right">Income</th><th style="text-align:right">Chg</th><th style="text-align:right">Expenses</th><th style="text-align:right">Chg</th><th style="text-align:right">Net</th><th style="text-align:right">Margin</th></tr></thead><tbody>`;
+    MS.forEach((m,i)=>{
+      const s=stats[m];const prev=i>0?stats[MS[i-1]]:null;
+      const hasData=s.income>0||s.expenses>0;
+      const incChg=prev&&prev.income>0?(((s.income-prev.income)/prev.income)*100).toFixed(0):null;
+      const expChg=prev&&prev.expenses>0?(((s.expenses-prev.expenses)/prev.expenses)*100).toFixed(0):null;
+      const margin=s.income>0?((s.net/s.income)*100).toFixed(0):"—";
+      const incArrow=incChg!==null?(incChg>=0?"<span style=\"color:var(--ac)\">▲"+incChg+"%</span>":"<span style=\"color:var(--dn)\">▼"+incChg+"%</span>"):"—";
+      const expArrow=expChg!==null?(expChg<=0?"<span style=\"color:var(--ac)\">▼"+expChg+"%</span>":"<span style=\"color:var(--dn)\">▲+"+expChg+"%</span>"):"—";
+      h+=`<tr${!hasData?" style=\"opacity:.35\"":""}><td style="font-weight:${month===m?700:400}">${m}</td><td style="text-align:right">${fmt(s.income)}</td><td style="text-align:right;font-size:10px">${incArrow}</td><td style="text-align:right">${fmt(s.expenses)}</td><td style="text-align:right;font-size:10px">${expArrow}</td><td style="text-align:right;font-weight:600;color:${s.net>=0?"var(--ac)":"var(--dn)"}">${s.net?fmtS(s.net):"—"}</td><td style="text-align:right;font-size:10px;color:${margin>=20?"var(--ac)":margin>=10?"var(--wn)":"var(--dn)"}">${margin!=="—"?margin+"%":margin}</td></tr>`;
+    });
+    h+=`</tbody></table></div></div>`;
+
+    // ═══ QUARTER-OVER-QUARTER COMPARISON ═══
+    h+=`<div class="sec"><div class="st">📊 Quarter-over-Quarter Comparison — ${year}</div><div style="overflow-x:auto"><table class="stl"><thead><tr><th>Quarter</th><th style="text-align:right">Income</th><th style="text-align:right">vs Prev Q</th><th style="text-align:right">Expenses</th><th style="text-align:right">vs Prev Q</th><th style="text-align:right">Net Profit</th><th style="text-align:right">Margin</th></tr></thead><tbody>`;
+    qs.forEach((q,i)=>{
+      const prev=i>0?qs[i-1]:null;
+      const hasData=q.income>0||q.expenses>0;
+      const incChg=prev&&prev.income>0?(((q.income-prev.income)/prev.income)*100).toFixed(0):null;
+      const expChg=prev&&prev.expenses>0?(((q.expenses-prev.expenses)/prev.expenses)*100).toFixed(0):null;
+      const margin=q.income>0?((q.net/q.income)*100).toFixed(0):"—";
+      const incArrow=incChg!==null?(incChg>=0?"<span style=\"color:var(--ac)\">▲+"+incChg+"%</span>":"<span style=\"color:var(--dn)\">▼"+incChg+"%</span>"):"—";
+      const expArrow=expChg!==null?(expChg<=0?"<span style=\"color:var(--ac)\">▼"+expChg+"%</span>":"<span style=\"color:var(--dn)\">▲+"+expChg+"%</span>"):"—";
+      h+=`<tr${!hasData?" style=\"opacity:.35\"":""}><td style="font-weight:600">${q.label} (${QS[i].join("–")})</td><td style="text-align:right">${fmt(q.income)}</td><td style="text-align:right;font-size:10px">${incArrow}</td><td style="text-align:right">${fmt(q.expenses)}</td><td style="text-align:right;font-size:10px">${expArrow}</td><td style="text-align:right;font-weight:700;color:${q.net>=0?"var(--ac)":"var(--dn)"}">${q.net?fmtS(q.net):"—"}</td><td style="text-align:right;font-size:10px;color:${margin>=20?"var(--ac)":margin>=10?"var(--wn)":"var(--dn)"}">${margin!=="—"?margin+"%":margin}</td></tr>`;
+    });
+    h+=`</tbody></table></div></div>`;
+
+    // ═══ EXPENSE CATEGORY TRENDS (per category across months) ═══
+    h+=`<div class="sec"><div class="st">📉 Expense Category Trends — ${year}</div><div style="overflow-x:auto"><table class="stl"><thead><tr><th>Category</th>${MS.map(m=>`<th style="text-align:right">${m}</th>`).join("")}<th style="text-align:right">Total</th><th style="text-align:right">% Inc</th></tr></thead><tbody>`;
+    const catTrends=eCats.map(c=>({...c,vals:MS.map(m=>yd.expenses?.[m]?.[c.id]||0),total:MS.reduce((s,m)=>s+(yd.expenses?.[m]?.[c.id]||0),0)})).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+    catTrends.forEach(c=>{const pOfInc=ytd2.income>0?((c.total/ytd2.income)*100).toFixed(1):"0";h+=`<tr><td style="white-space:nowrap">${c.icon} ${esc(c.name)}</td>${c.vals.map(v=>`<td style="text-align:right">${fmt(v)}</td>`).join("")}<td style="text-align:right;font-weight:600">${fmt(c.total)}</td><td style="text-align:right;color:var(--a2)">${pOfInc}%</td></tr>`});
+    h+=`<tr class="tr"><td>Total</td>${MS.map(m=>`<td style="text-align:right;color:var(--dn)">${fmt(stats[m].expenses)}</td>`).join("")}<td style="text-align:right;font-weight:700;color:var(--dn)">${fmt(ytd2.expenses)}</td><td style="text-align:right;color:var(--dn)">${opexRatio}%</td></tr>`;
+    h+=`</tbody></table></div></div>`;
 
     // Expense breakdown by % of income
     h+=`<div class="sec"><div class="st">📊 Expense Breakdown (% of Income)</div>`;
@@ -545,7 +648,7 @@ function render(){
 
   // ═══ SETTINGS ═══
   if(view==="settings"){
-    h+=`<div class="sec"><div class="st">☁️ Google Sheets Sync</div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span id="sync-badge2"></span><button class="re" style="font-size:11px;padding:5px 12px" onclick="showSetup=true;render()">⚙️ ${SCRIPT_URL?"Reconfigure":"Connect Google Sheets"}</button>${SCRIPT_URL?`<button class="re" style="font-size:11px;padding:5px 12px" onclick="doForceSync()">🔄 Force Sync</button><button class="b1" style="font-size:11px;padding:5px 14px" onclick="doPushToCloud()">⬆️ Push to Cloud</button>`:""}</div>${_pendingSync?`<div style="font-size:11px;color:var(--wn);margin-top:8px">⚠️ You have unsaved changes. Click "Push to Cloud" to sync.</div>`:""}</div>`;
+    h+=`<div class="sec"><div class="st">☁️ Google Sheets Sync</div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span id="sync-badge2"></span><button class="re" style="font-size:11px;padding:5px 12px" onclick="showSetup=true;render()">⚙️ ${SCRIPT_URL?"Reconfigure":"Connect Google Sheets"}</button>${SCRIPT_URL?`<button class="b1" style="font-size:11px;padding:6px 14px" onclick="doPushToCloud()">⬆️ Push to Cloud</button><button class="b2" style="font-size:11px;padding:6px 14px" onclick="doPullFromCloud()">⬇️ Sync from Cloud</button>`:""}</div>${_pendingSync?`<div style="font-size:11px;color:var(--wn);margin-top:8px">⚠️ You have unsaved changes. Click "Push to Cloud" to sync.</div>`:""}</div>`;
     h+=`<div class="sec"><div class="st">🏢 Clinic / Company</div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Name</label><input style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:8px" value="${esc(co.name||"")}" onchange="upd(d=>{d.company.name=this.value})" oninput="D.company.name=this.value;saveLocal()"><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block;margin-top:8px">Subtitle</label><input style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:8px" value="${esc(co.subtitle||"")}" onchange="upd(d=>{d.company.subtitle=this.value})" oninput="D.company.subtitle=this.value;saveLocal()"><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block;margin-top:8px">Logo</label><div style="display:flex;align-items:center;gap:10px">${co.logoDataUrl?`<div style="width:48px;height:48px;border-radius:10px;overflow:hidden;border:1px solid var(--bd)"><img src="${co.logoDataUrl}" style="width:100%;height:100%;object-fit:cover"></div>`:""}<button class="b2" onclick="document.getElementById('logo-input').click()">Upload</button>${co.logoDataUrl?`<button class="b3" style="padding:6px 12px" onclick="upd(d=>{d.company.logoDataUrl=null})">Remove</button>`:""}</div></div>`;
     h+=`<div class="sec"><div class="st">🪑 Operational Settings</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Dental Chairs</label><input type="number" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit" value="${co.chairs||3}" onchange="upd(d=>{d.company.chairs=+this.value||3})"></div><div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Working Days/Month</label><input type="number" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit" value="${co.workingDaysPerMonth||22}" onchange="upd(d=>{d.company.workingDaysPerMonth=+this.value||22})"></div><div><label style="font-size:11px;color:var(--mu);margin-bottom:3px;display:block">Monthly Fixed Costs (₱)</label><input type="number" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font-size:13px;font-family:inherit" value="${co.fixedCosts||0}" onchange="upd(d=>{d.company.fixedCosts=+this.value||0})"></div></div><div style="font-size:10px;color:var(--mu);margin-top:8px">Used for Break-Even Analysis and Revenue Per Chair reports. Fixed costs = rent, salaries, insurance, etc.</div></div>`;
     h+=`<div class="sec"><div class="st">🎨 Color Palette</div><div class="pg">${PRESETS.map(p=>{const act=p.c.accent===pal.accent&&p.c.bg===pal.bg;return`<div class="po ${act?"act":""}" style="background:${p.c.surface}" onclick='applyPreset(${JSON.stringify(p.c)})'><div class="pd"><span style="background:${p.c.accent}"></span><span style="background:${p.c.accent2}"></span><span style="background:${p.c.danger}"></span></div><div class="pl" style="color:${p.c.muted}">${p.name}</div></div>`}).join("")}</div><div style="margin-top:10px;font-size:11px;color:var(--mu);font-weight:600;margin-bottom:6px">Custom</div>${[["bg","Background"],["surface","Surface"],["accent","Accent"],["accent2","Accent 2"],["danger","Danger"],["warning","Warning"],["text","Text"],["muted","Muted"],["border","Border"]].map(([k,l])=>`<div class="cr"><label style="font-size:11px;color:var(--mu)">${l}</label><input type="color" value="${pal[k]||"#000"}" onchange="upd(d=>{d.palette.${k}=this.value})"><span style="font-size:10px;color:var(--mu);font-family:monospace">${pal[k]}</span></div>`).join("")}</div>`;
@@ -675,18 +778,9 @@ if (!SCRIPT_URL) {
   showSetup = true;
   render();
 } else {
-  // Has URL — render immediately with local data, then sync from cloud in background
+  // Has URL — render with local data only. User manually syncs.
   render();
-  cloudLoad().then(cd => {
-    if (cd && cd.company) {
-      const m = mkDefault();
-      Object.keys(m).forEach(k => { if (cd[k] !== undefined) m[k] = cd[k] });
-      D = m;
-      saveLocal();
-      render();
-    }
-    renderSyncBadge();
-  });
+  renderSyncBadge();
 }
 </script>
 </body>
